@@ -22,11 +22,21 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float standingHeight = 2f;
     [SerializeField] private float crouchTransitionSpeed = 10f;
     
+    [Header("Jump Settings")]
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = 9.81f;
+    [SerializeField] private float jumpCooldown = 0.1f;
+    
     private Vector3 movement;
     private float currentSpeed;
     private bool isRunning;
     private bool isCrouching;
     private float targetHeight;
+    
+    // Jump variables
+    private Vector3 velocity;
+    private bool isGrounded;
+    private float lastJumpTime;
     
     void Start()
     {
@@ -115,11 +125,20 @@ public class PlayerMovement : MonoBehaviour
         
         // Kontrola crouchování (Ctrl)
         isCrouching = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        
+        // Kontrola skoku (Space)
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            TryJump();
+        }
     }
     
     void HandleMovement()
     {
         if (characterController == null) return;
+        
+        // Kontrola zda jsme na zemi
+        isGrounded = characterController.isGrounded;
         
         // Určení rychlosti na základě stavu hráče
         if (isCrouching)
@@ -135,14 +154,19 @@ public class PlayerMovement : MonoBehaviour
             currentSpeed = walkSpeed;
         }
         
-        // Aplikace pohybu
+        // Horizontální pohyb
         Vector3 moveVector = movement * currentSpeed * Time.deltaTime;
         
-        // Přidání gravitace (jednoduchá implementace)
-        if (!characterController.isGrounded)
+        // Gravitace a jump logika
+        if (isGrounded && velocity.y < 0)
         {
-            moveVector.y = -9.81f * Time.deltaTime;
+            velocity.y = -2f; // Mírné přitlačení k zemi
         }
+        
+        velocity.y -= gravity * Time.deltaTime;
+        
+        // Kombinace horizontálního pohybu a vertikální rychlosti
+        moveVector.y = velocity.y * Time.deltaTime;
         
         // Pohyb hráče
         characterController.Move(moveVector);
@@ -189,5 +213,52 @@ public class PlayerMovement : MonoBehaviour
     public Vector3 GetMovementDirection()
     {
         return movement;
+    }
+    
+    // Jump Methods
+    private void TryJump()
+    {
+        // Kontrola zda můžeme skočit
+        if (!CanJump()) return;
+        
+        // Vypočítat jump velocity podle výšky skoku
+        float jumpVelocity = Mathf.Sqrt(jumpHeight * 2f * gravity);
+        velocity.y = jumpVelocity;
+        
+        lastJumpTime = Time.time;
+        
+        Debug.Log($"PlayerMovement: Player jumped with velocity {jumpVelocity}");
+    }
+    
+    private bool CanJump()
+    {
+        // Můžeme skočit pouze pokud:
+        // 1. Jsme na zemi
+        // 2. Necrouchujeme (volitelné)
+        // 3. Uplynul cooldown od posledního skoku
+        
+        if (!isGrounded) return false;
+        
+        if (Time.time - lastJumpTime < jumpCooldown) return false;
+        
+        // Volitelně: nemůžeme skočit při crouchování
+        // if (isCrouching) return false;
+        
+        return true;
+    }
+    
+    public bool IsJumping()
+    {
+        return !isGrounded && velocity.y > 0;
+    }
+    
+    public bool IsFalling()
+    {
+        return !isGrounded && velocity.y < 0;
+    }
+    
+    public bool IsGrounded()
+    {
+        return isGrounded;
     }
 }
