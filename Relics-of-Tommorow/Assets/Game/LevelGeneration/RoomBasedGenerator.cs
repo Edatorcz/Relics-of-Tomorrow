@@ -10,8 +10,8 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     [Header("Room Layout")]
     [SerializeField] protected int minRooms = 5;
     [SerializeField] protected int maxRooms = 10;
-    [SerializeField] protected float baseRoomSize = 25f; // Základní velikost místnosti
-    [SerializeField] protected float maxRoomSize = 50f; // Maximální velikost místnosti
+    [SerializeField] protected float baseRoomSize = 60f; // Základní velikost místnosti (zvětšeno pro volný prostor)
+    [SerializeField] protected float maxRoomSize = 120f; // Maximální velikost místnosti
     [SerializeField] protected float roomSizeIncreasePerEnemy = 3f; // O kolik se zvětší místnost za každého enemáka
     [SerializeField] protected float corridorWidth = 3f;
     [SerializeField] protected Vector3 startPosition = Vector3.zero;
@@ -34,13 +34,16 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     [SerializeField] protected int decorationsPerRoom = 5;
     
     [Header("Enemy Progression")]
+    [SerializeField] protected bool spawnEnemies = true; // Povolit/zakázat spawning enemáků
+    [SerializeField] protected bool enableEnemyRespawn = false; // Povolit/zakázat respawnování enemáků
     [SerializeField] protected GameObject[] enemyPrefabs;
     [SerializeField] protected int startingEnemyCount = 2;
     [SerializeField] protected float enemyIncreasePerRoom = 1.5f; // Každá místnost +50% enemáků
     
     [Header("Player Settings")]
+    [SerializeField] protected bool spawnPlayer = true; // Povolit/zakázat spawning hráče
     [SerializeField] protected GameObject playerPrefab;
-    [SerializeField] protected float playerSpawnHeight = 1f;
+    [SerializeField] protected float playerSpawnHeight = 5f; // Zvýšeno - hráč spadne na zem při freeze
     
     [Header("Item Settings")]
     [SerializeField] protected GameObject[] itemPrefabs; // Itemy pro prázdné místnosti
@@ -104,7 +107,12 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         BuildRoomStructures(); // Postaví stěny, podlahy atd.
         BakeNavMesh(); // Vybakovat NavMesh pro pohyb nepřátel
         PopulateRooms();
-        SpawnPlayer();
+        
+        // Nastavit EnemyManager respawn podle nastavení
+        ConfigureEnemyRespawn();
+        
+        // Spawn hráče s delay aby byla podlaha připravená
+        StartCoroutine(SpawnPlayerDelayed());
         
         Debug.Log($"Vygenerováno {numberOfRooms} místností (+ případné odbočky + boss room)");
     }
@@ -211,8 +219,9 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     {
         if (roomIndex == 0) return RoomType.Start;
         
-        // Šance na treasure room (ne hned v druhé místnosti)
-        if (roomIndex >= 2 && Random.Range(0f, 1f) < emptyRoomChance)
+        // Po každých 3 místnostech je treasure room s itemy
+        // Místnosti 3, 6, 9, 12... jsou treasure rooms
+        if (roomIndex > 0 && roomIndex % 4 == 3)
         {
             return RoomType.Treasure;
         }
@@ -642,6 +651,12 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     
     protected virtual void SpawnEnemiesInRoom(Room room, int count)
     {
+        if (!spawnEnemies)
+        {
+            Debug.Log($"Room {room.roomNumber}: Spawn enemáků je vypnutý");
+            return;
+        }
+        
         if (enemyPrefabs == null || enemyPrefabs.Length == 0)
         {
             Debug.LogWarning($"Room {room.roomNumber}: Žádné enemy prefaby nejsou přiřazené");
@@ -810,6 +825,12 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     
     protected virtual void SpawnBossInRoom(Room room)
     {
+        if (!spawnEnemies)
+        {
+            Debug.Log("Spawn bosse je vypnutý (kontrolováno přes spawnEnemies)");
+            return;
+        }
+        
         if (bossPrefab == null)
         {
             Debug.LogWarning("Boss prefab není nastaven v inspectoru! Vytvořen spawn point marker.");
@@ -837,6 +858,12 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     
     protected virtual void SpawnPlayer()
     {
+        if (!spawnPlayer)
+        {
+            Debug.Log("Spawn hráče je vypnutý");
+            return;
+        }
+        
         if (playerPrefab == null)
         {
             Debug.LogWarning("Player prefab není nastaven!");
@@ -848,6 +875,15 @@ public abstract class RoomBasedGenerator : MonoBehaviour
             Debug.LogError("Žádné místnosti nebyly vygenerovány!");
             return;
         }
+        
+        // Delay spawn aby byla podlaha určitě vytvořená
+        StartCoroutine(SpawnPlayerDelayed());
+    }
+    
+    private System.Collections.IEnumerator SpawnPlayerDelayed()
+    {
+        // Počkat jeden frame aby se fyzika inicializovala
+        yield return new WaitForFixedUpdate();
         
         Room startRoom = rooms[0];
         Vector3 spawnPosition = startRoom.center + new Vector3(0, playerSpawnHeight, 0);
@@ -871,12 +907,29 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         }
         
         // Nastavení NavMeshSurface
-        surface.collectObjects = CollectObjects.Children; // Scanovat jen children
+        surface.collectObjects = CollectObjects.All; // Skenovat VŠECHNY objekty
         
         // Vybakovat NavMesh
         surface.BuildNavMesh();
         
         Debug.Log("NavMesh vybakován pomocí NavMeshSurface!");
+    }
+    
+    protected virtual void ConfigureEnemyRespawn()
+    {
+        // Najít EnemyManager a nastavit respawn
+        EnemyManager enemyManager = FindFirstObjectByType<EnemyManager>();
+        if (enemyManager != null)
+        {
+            // Použít reflection pro nastavení enableAutoSpawn
+            var field = enemyManager.GetType().GetField("enableAutoSpawn", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                field.SetValue(enemyManager, enableEnemyRespawn);
+                Debug.Log($"EnemyManager: Respawn enemáků nastaven na {enableEnemyRespawn}");
+            }
+        }
     }
     
     [ContextMenu("Regenerate Level")]

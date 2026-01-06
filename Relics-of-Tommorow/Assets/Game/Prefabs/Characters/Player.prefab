@@ -9,11 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7484296061973082873}
-  - component: {fileID: 6085124244523324756}
-  - component: {fileID: 181013846100812922}
-  - component: {fileID: 7149753442724728845}
-  - component: {fileID: 6612846665536490950}
-  - component: {fileID: 6483904808704011290}
+  - component: {fileID: 6706092797298616605}
+  - component: {fileID: 1667435925953563265}
+  - component: {fileID: 3066066705688967853}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -37,7 +35,34 @@ Transform:
   - {fileID: 6563729541607164841}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6085124244523324756
+--- !u!114 &6706092797298616605
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5716606083500063942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1efb1fbd6a44b3c42b2d9d9b7eac872f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackDamage: 25
+  attackRange: 10
+  attackCooldown: 0.5
+  attackKnockbackForce: 5
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  maxBlockStamina: 100
+  blockStaminaDrainRate: 20
+  blockStaminaRegenRate: 15
+  blockStaminaRegenDelay: 1
+  blockDamageReduction: 0.7
+  attackEffect: {fileID: 0}
+  attackSound: {fileID: 0}
+  audioSource: {fileID: 0}
+--- !u!114 &1667435925953563265
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -61,11 +86,12 @@ MonoBehaviour:
   crouchHeight: 1
   standingHeight: 2
   crouchTransitionSpeed: 10
+  jumpSpeed: 5
   rollSpeed: 10
   rollDuration: 0.5
   rollCooldown: 1
   rollInvulnerabilityDuration: 0.5
---- !u!114 &181013846100812922
+--- !u!114 &3066066705688967853
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -84,79 +110,6 @@ MonoBehaviour:
   enableHealthRegen: 1
   regenRate: 5
   regenDelay: 3
---- !u!114 &7149753442724728845
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716606083500063942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1efb1fbd6a44b3c42b2d9d9b7eac872f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  attackDamage: 25
-  attackRange: 10
-  attackCooldown: 0.5
-  attackKnockbackForce: 5
-  enemyLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  maxBlockStamina: 100
-  blockStaminaDrainRate: 20
-  blockStaminaRegenRate: 15
-  blockStaminaRegenDelay: 1
-  blockDamageReduction: 0.7
-  attackEffect: {fileID: 0}
-  attackSound: {fileID: 0}
-  audioSource: {fileID: 0}
---- !u!114 &6612846665536490950
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716606083500063942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b4c6a86881bce848aacd22d623d1ee1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 100
-  currentHealth: 0
-  isInvulnerable: 0
-  invulnerabilityDuration: 1
-  enableHealthRegen: 1
-  regenRate: 5
-  regenDelay: 3
---- !u!114 &6483904808704011290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716606083500063942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1efb1fbd6a44b3c42b2d9d9b7eac872f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  attackDamage: 25
-  attackRange: 10
-  attackCooldown: 0.5
-  attackKnockbackForce: 5
-  enemyLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  maxBlockStamina: 100
-  blockStaminaDrainRate: 20
-  blockStaminaRegenRate: 15
-  blockStaminaRegenDelay: 1
-  blockDamageReduction: 0.7
-  attackEffect: {fileID: 0}
-  attackSound: {fileID: 0}
-  audioSource: {fileID: 0}
 --- !u!1 &6814727242934119150
 GameObject:
   m_ObjectHideFlags: 0

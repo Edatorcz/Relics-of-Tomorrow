@@ -6,6 +6,7 @@ using UnityEngine;
 public class RespawnManager : MonoBehaviour
 {
     [Header("Respawn Settings")]
+    [SerializeField] private bool enableRespawn = true; // Povolit/zakázat respawn
     [SerializeField] private Transform[] epochSpawnPoints;
     [SerializeField] private string[] epochNames = { "Pravěk", "Starověk", "Středověk", "Současnost", "Budoucnost" };
     [SerializeField] private float respawnDelay = 2f;
@@ -95,6 +96,12 @@ public class RespawnManager : MonoBehaviour
     
     void HandlePlayerDeath()
     {
+        if (!enableRespawn)
+        {
+            Debug.Log("RespawnManager: Respawn je vypnutý");
+            return;
+        }
+        
         Debug.Log("RespawnManager: Player died! Preparing respawn...");
         Invoke(nameof(RespawnPlayer), respawnDelay);
     }

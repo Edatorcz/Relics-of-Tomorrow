@@ -22,15 +22,30 @@ public abstract class EpochGenerator : MonoBehaviour
     [SerializeField] protected int decorationCount = 20;
     
     [Header("Enemy Settings")]
+    [SerializeField] protected bool spawnEnemies = true; // Povolit/zakázat spawning enemáků
     [SerializeField] protected GameObject[] enemyPrefabs;
     [SerializeField] protected int enemyCount = 5;
     [SerializeField] protected float minEnemySpacing = 5f;
     
     [Header("Player Spawn")]
+    [SerializeField] protected bool spawnPlayer = true; // Povolit/zakázat spawning hráče
     [SerializeField] protected Vector3 playerSpawnPosition = new Vector3(0, 1, 0);
+    
+    [Header("Visual Effects")]
+    [SerializeField] protected Color ambientLightColor = Color.gray;
+    [SerializeField] protected float ambientIntensity = 0.5f;
+    [SerializeField] protected Color directionalLightColor = Color.white;
+    [SerializeField] protected float directionalLightIntensity = 1f;
+    [SerializeField] protected Vector3 directionalLightRotation = new Vector3(50, -30, 0);
+    [SerializeField] protected bool useFog = false;
+    [SerializeField] protected Color fogColor = Color.gray;
+    [SerializeField] protected float fogDensity = 0.01f;
+    [SerializeField] protected GameObject particleSystemPrefab;
     
     protected List<Vector3> spawnedPositions = new List<Vector3>();
     protected Terrain generatedTerrain;
+    protected GameObject epochLighting;
+    protected GameObject epochParticles;
     
     void Start()
     {
@@ -44,6 +59,7 @@ public abstract class EpochGenerator : MonoBehaviour
         GenerateDecorations();
         SpawnEnemies();
         SetupPlayerSpawn();
+        SetupVisualEffects();
     }
     
     protected virtual void ClearLevel()
@@ -54,6 +70,12 @@ public abstract class EpochGenerator : MonoBehaviour
         }
         spawnedPositions.Clear();
         generatedTerrain = null;
+        
+        // Vyčistit starý lighting a částice
+        if (epochLighting != null)
+            Destroy(epochLighting);
+        if (epochParticles != null)
+            Destroy(epochParticles);
     }
     
     protected virtual void GenerateFloor()
@@ -142,6 +164,12 @@ public abstract class EpochGenerator : MonoBehaviour
     
     protected virtual void SpawnEnemies()
     {
+        if (!spawnEnemies)
+        {
+            Debug.Log($"{GetType().Name}: Spawn enemáků je vypnutý");
+            return;
+        }
+        
         if (enemyPrefabs == null || enemyPrefabs.Length == 0)
         {
             Debug.LogWarning($"{GetType().Name}: No enemy prefabs assigned!");
@@ -167,10 +195,23 @@ public abstract class EpochGenerator : MonoBehaviour
     
     protected virtual void SetupPlayerSpawn()
     {
+        if (!spawnPlayer)
+        {
+            Debug.Log($"{GetType().Name}: Spawn hráče je vypnutý");
+            return;
+        }
+        
         // Najít RespawnManager a nastavit spawn point
         RespawnManager respawnManager = FindFirstObjectByType<RespawnManager>();
         if (respawnManager != null)
         {
+            // Pokud je spawn vypnutý, vypnout i respawn
+            if (!spawnPlayer)
+            {
+                // Přístup k enableRespawn by vyžadoval public property, zatím jen log
+                Debug.Log($"{GetType().Name}: Player spawn je vypnutý, respawn by měl být také vypnutý v RespawnManager");
+            }
+            
             Debug.Log($"{GetType().Name}: Player spawn set to {playerSpawnPosition}");
         }
     }
@@ -243,5 +284,79 @@ public abstract class EpochGenerator : MonoBehaviour
     public void RegenerateLevel()
     {
         GenerateLevel();
+    }
+    
+    /// <summary>
+    /// Nastavení vizuálních efektů pro epochu (osvětlení, částice, mlha)
+    /// </summary>
+    protected virtual void SetupVisualEffects()
+    {
+        SetupLighting();
+        SetupFog();
+        SetupParticles();
+    }
+    
+    /// <summary>
+    /// Vytvoří a nakonfiguruje osvětlení pro epochu
+    /// </summary>
+    protected virtual void SetupLighting()
+    {
+        // Vytvořit parent pro lighting
+        epochLighting = new GameObject("EpochLighting");
+        epochLighting.transform.parent = transform;
+        
+        // Nastavit ambient light
+        RenderSettings.ambientLight = ambientLightColor;
+        RenderSettings.ambientIntensity = ambientIntensity;
+        
+        // Vytvořit directional light
+        GameObject lightObj = new GameObject("DirectionalLight");
+        lightObj.transform.parent = epochLighting.transform;
+        lightObj.transform.rotation = Quaternion.Euler(directionalLightRotation);
+        
+        Light dirLight = lightObj.AddComponent<Light>();
+        dirLight.type = LightType.Directional;
+        dirLight.color = directionalLightColor;
+        dirLight.intensity = directionalLightIntensity;
+        dirLight.shadows = LightShadows.Soft;
+    }
+    
+    /// <summary>
+    /// Nastavení mlhy pro atmosféru
+    /// </summary>
+    protected virtual void SetupFog()
+    {
+        RenderSettings.fog = useFog;
+        if (useFog)
+        {
+            RenderSettings.fogColor = fogColor;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = fogDensity;
+        }
+    }
+    
+    /// <summary>
+    /// Vytvoří částicový systém pro epochu (prach, déšť, sníh, atd.)
+    /// </summary>
+    protected virtual void SetupParticles()
+    {
+        if (particleSystemPrefab != null)
+        {
+            epochParticles = Instantiate(particleSystemPrefab, Vector3.zero, Quaternion.identity, transform);
+            epochParticles.name = "EpochParticles";
+        }
+        else
+        {
+            // Vytvořit základní částicový systém, pokud není prefab
+            CreateDefaultParticleSystem();
+        }
+    }
+    
+    /// <summary>
+    /// Vytvoří základní částicový systém
+    /// </summary>
+    protected virtual void CreateDefaultParticleSystem()
+    {
+        // Override v jednotlivých epochách pro specifické částice
     }
 }

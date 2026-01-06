@@ -402,8 +402,8 @@ public abstract class EnemyBase : MonoBehaviour
         
         OnDeath?.Invoke(this);
         
-        // Smazat a respawnout
-        Invoke(nameof(RespawnEnemy), 3f);
+        // Zničit enemáka po 2 sekundách (místo respawnu)
+        Destroy(gameObject, 2f);
     }
     
     protected virtual void RespawnEnemy()

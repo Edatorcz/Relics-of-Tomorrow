@@ -31,6 +31,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float rollCooldown = 1f;
     [SerializeField] private float rollInvulnerabilityDuration = 0.5f;
     
+    [Header("Freeze Settings")]
+    [SerializeField] private bool freezeOnStart = true; // Zmrazit hráče na začátku
+    private bool isFrozen = false;
+    
     private Vector3 movement;
     private float currentSpeed;
     private bool isRunning;
@@ -58,8 +62,16 @@ public class PlayerMovement : MonoBehaviour
         // RESET všeho
         movement = Vector3.zero;
         
-        // Získat PlayerHealth
+        // Získání reference na PlayerHealth
         playerHealth = GetComponent<PlayerHealth>();
+        
+        // Freeze hráče na začátku pokud je to zapnuté
+        if (freezeOnStart)
+        {
+            isFrozen = true;
+            verticalVelocity = 0f; // Nulová gravitační rychlost
+            Debug.Log("PlayerMovement: Hráč je zmrazený - zmáčkni levé tlačítko myši pro odmčení");
+        }
         
         Debug.Log("PlayerMovement: Initialized with SimpleMove mode");
     }
@@ -142,6 +154,35 @@ public class PlayerMovement : MonoBehaviour
     
     void Update()
     {
+        // Kontrola unfreeze - levé tlačítko myši
+        if (isFrozen)
+        {
+            if (Input.GetMouseButtonDown(0)) // 0 = levé tlačítko myši
+            {
+                isFrozen = false;
+                verticalVelocity = 0f; // Nulová gravitace na začátek
+                Debug.Log("PlayerMovement: Hráč odmčen!");
+            }
+            // Při freeze stále aplikovat gravitaci, aby hráč spadl na zem
+            if (characterController != null && characterController.enabled)
+            {
+                // Gravitace i když je frozen - aby hráč spadl na podlahu
+                if (characterController.isGrounded)
+                {
+                    verticalVelocity = -2f;
+                }
+                else
+                {
+                    verticalVelocity -= 20f * Time.deltaTime;
+                }
+                
+                Vector3 gravityMove = new Vector3(0, verticalVelocity, 0);
+                characterController.Move(gravityMove * Time.deltaTime);
+            }
+            return; // Blokovat input a horizontální pohyb
+        }
+        
+        // Roll - jen když není frozen
         if (isRolling)
         {
             HandleRoll();
@@ -203,6 +244,14 @@ public class PlayerMovement : MonoBehaviour
     
     void HandleInput()
     {
+        // Blokovat input když je hráč frozen
+        if (isFrozen)
+        {
+            movement = Vector3.zero;
+            isRunning = false;
+            return;
+        }
+        
         // Získání vstupu WASD
         float horizontal = Input.GetAxisRaw("Horizontal"); // A/D klávesy
         float vertical = Input.GetAxisRaw("Vertical");     // W/S klávesy
