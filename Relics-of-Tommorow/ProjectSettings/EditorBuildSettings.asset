@@ -6,8 +6,20 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Tutorial.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/Menu.unity
+    guid: c0e4234852325f941897190bddaccce2
+  - enabled: 1
+    path: "Assets/Scenes/Prav\u011Bk.unity"
+    guid: 94a8e156a8d92da4685c7aced02492ba
+  - enabled: 1
+    path: "Assets/Scenes/Starov\u011Bk.unity"
+    guid: 33e4182b0a51afe408529ec47e9e8a75
+  - enabled: 1
+    path: "Assets/Scenes/St\u0159edov\u011Bk.unity"
+    guid: 6d62d28f9160232498c851cba1952160
+  - enabled: 1
+    path: Assets/Scenes/Budoucnost.unity
+    guid: 89551fd901c0abf449adcf3890ec5af9
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

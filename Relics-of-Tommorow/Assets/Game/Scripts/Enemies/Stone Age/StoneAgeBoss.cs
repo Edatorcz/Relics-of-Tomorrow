@@ -41,6 +41,9 @@ public class StoneAgeBoss : EnemyBase
     [SerializeField] private float roarRadius = 12f;
     [SerializeField] private float healingAmount = 100f;
     
+    [Header("Boss Loot")]
+    [SerializeField] private BossLootDropper lootDropper;
+    
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem chargeEffect;
     [SerializeField] private ParticleSystem phaseChangeEffect;
@@ -100,7 +103,6 @@ public class StoneAgeBoss : EnemyBase
         
         ChangeState(EnemyState.Idle);
         
-        Debug.Log("Stone Age Boss spawned with " + maxHealth + " HP");
     }
     
     protected override void Update()
@@ -176,7 +178,6 @@ public class StoneAgeBoss : EnemyBase
     private void EnterPhase2()
     {
         currentPhase = 2;
-        Debug.Log("Boss entered Phase 2 - Berserker Mode!");
         
         // Zvýšení rychlosti
         moveSpeed = 4.5f;
@@ -207,7 +208,6 @@ public class StoneAgeBoss : EnemyBase
     private void EnterPhase3()
     {
         currentPhase = 3;
-        Debug.Log("Boss entered Phase 3 - Ancient Fury!");
         
         // Maximální statistiky
         moveSpeed = 6f;
@@ -291,7 +291,6 @@ public class StoneAgeBoss : EnemyBase
         isCharging = true;
         lastChargeTime = Time.time;
         
-        Debug.Log("Boss charging!");
         PlaySound(chargeSound);
         
         // Aktivovat vizuální efekt
@@ -358,7 +357,6 @@ public class StoneAgeBoss : EnemyBase
     {
         lastRockThrowTime = Time.time;
         
-        Debug.Log("Boss throwing rocks!");
         
         for (int i = 0; i < rocksPerVolley; i++)
         {
@@ -406,7 +404,6 @@ public class StoneAgeBoss : EnemyBase
     {
         isSpinning = true;
         
-        Debug.Log("Boss spinning!");
         
         float spinTimer = 0f;
         float spinSpeed = 720f; // 2 otáčky za sekundu
@@ -442,7 +439,6 @@ public class StoneAgeBoss : EnemyBase
     {
         lastGroundPoundTime = Time.time;
         
-        Debug.Log("Boss ground pound!");
         PlaySound(groundPoundSound);
         
         // Skok nahoru
@@ -508,7 +504,6 @@ public class StoneAgeBoss : EnemyBase
     
     private IEnumerator RoarAttack()
     {
-        Debug.Log("Boss roars!");
         PlaySound(bossRoarSound);
         
         // Stun všechny v dosahu
@@ -529,12 +524,10 @@ public class StoneAgeBoss : EnemyBase
     {
         if (minionPrefab == null)
         {
-            Debug.LogWarning("Minion prefab not assigned!");
             return;
         }
         
         lastMinionSpawnTime = Time.time;
-        Debug.Log("Boss spawning minions!");
         
         for (int i = 0; i < minionsToSpawn; i++)
         {
@@ -544,7 +537,6 @@ public class StoneAgeBoss : EnemyBase
             Vector3 spawnPos = transform.position + offset;
             
             GameObject minion = Instantiate(minionPrefab, spawnPos, Quaternion.identity);
-            Debug.Log($"Minion {i+1} spawned at {spawnPos}");
         }
     }
     
@@ -596,7 +588,6 @@ public class StoneAgeBoss : EnemyBase
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(damage);
-                    Debug.Log($"Boss hit player for {damage} damage!");
                     
                     // Knockback
                     Rigidbody playerRb = playerTransform.GetComponent<Rigidbody>();
@@ -617,7 +608,6 @@ public class StoneAgeBoss : EnemyBase
         currentHealth -= amount;
         currentHealth = Mathf.Max(0, currentHealth);
         
-        Debug.Log($"Boss took {amount} damage. Health: {currentHealth}/{maxHealth}");
         
         // Visual feedback
         if (bossRenderer != null)
@@ -658,7 +648,6 @@ public class StoneAgeBoss : EnemyBase
         if (isDead) return;
         
         isDead = true;
-        Debug.Log("Boss defeated!");
         
         // Stop all abilities
         StopAllCoroutines();
@@ -668,6 +657,16 @@ public class StoneAgeBoss : EnemyBase
         
         // Disable components
         if (navMeshAgent != null) navMeshAgent.enabled = false;
+        
+        // DROP BOSS LOOT!
+        if (lootDropper != null)
+        {
+            lootDropper.DropBossLoot(transform.position);
+        }
+        else
+        {
+            Debug.LogWarning("StoneAgeBoss: BossLootDropper není přiřazen! Přidej komponentu BossLootDropper na boss objekt.");
+        }
         
         // Event
         OnDeath?.Invoke(this);
@@ -683,7 +682,6 @@ public class StoneAgeBoss : EnemyBase
         currentHealth += amount;
         currentHealth = Mathf.Min(currentHealth, maxHealth);
         
-        Debug.Log($"Boss healed for {amount}. Health: {currentHealth}/{maxHealth}");
         
         // Event
         OnHealthChanged?.Invoke(this, currentHealth / maxHealth);

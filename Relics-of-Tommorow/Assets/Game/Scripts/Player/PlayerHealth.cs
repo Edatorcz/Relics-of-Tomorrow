@@ -133,11 +133,13 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         
         isDead = true;
-        OnPlayerDied?.Invoke();
         
         Debug.Log("PlayerHealth: Player died!");
         
-        // Zde můžete přidat další logiku smrti (game over screen, respawn, atd.)
+        // Vyvolat event smrti (EpochManager se přihlásí k tomuto eventu)
+        OnPlayerDied?.Invoke();
+        
+        // Zde můžete přidat další logiku smrti (death screen, efekty, atd.)
     }
     
     public void Respawn()
@@ -207,6 +209,44 @@ public class PlayerHealth : MonoBehaviour
             GUI.Label(new Rect(x, y + barHeight + 25, barWidth, 20), "INVULNERABLE");
         }
         
+        // ==== STAMINA BAR ==== (nový!)
+        DrawStaminaBar(x, y + barHeight + 50);
+        
         GUI.color = Color.white;
+    }
+    
+    void DrawStaminaBar(float x, float y)
+    {
+        // Najít PlayerCombat pro získání staminy
+        PlayerCombat combat = GetComponent<PlayerCombat>();
+        if (combat == null) return;
+        
+        float barWidth = 200f;
+        float barHeight = 15f;
+        
+        // Background
+        GUI.color = Color.black;
+        GUI.DrawTexture(new Rect(x - 2, y - 2, barWidth + 4, barHeight + 4), Texture2D.whiteTexture);
+        
+        // Stamina bar background
+        GUI.color = new Color(0.3f, 0.3f, 0.3f);
+        GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), Texture2D.whiteTexture);
+        
+        // Stamina fill
+        float staminaPercent = combat.BlockStaminaPercent;
+        float staminaWidth = staminaPercent * barWidth;
+        
+        // Barva podle procent
+        if (staminaPercent <= 0.3f)
+            GUI.color = Color.Lerp(Color.red, Color.yellow, staminaPercent / 0.3f);
+        else
+            GUI.color = Color.Lerp(Color.yellow, Color.cyan, (staminaPercent - 0.3f) / 0.7f);
+        
+        GUI.DrawTexture(new Rect(x, y, staminaWidth, barHeight), Texture2D.whiteTexture);
+        
+        // Text
+        GUI.color = Color.white;
+        GUI.Label(new Rect(x, y + barHeight + 2, barWidth, 20), 
+            $"Stamina: {combat.BlockStamina:F0}/{combat.MaxBlockStamina:F0}");
     }
 }

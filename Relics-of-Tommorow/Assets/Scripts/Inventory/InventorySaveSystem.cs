@@ -51,7 +51,6 @@ public class InventorySaveSystem : MonoBehaviour
         
         string json = JsonUtility.ToJson(saveData, true);
         File.WriteAllText(saveFilePath, json);
-        Debug.Log($"Inventář uložen do: {saveFilePath}");
     }
     
     public void LoadInventory()
@@ -60,7 +59,6 @@ public class InventorySaveSystem : MonoBehaviour
         
         if (!File.Exists(saveFilePath))
         {
-            Debug.Log("Uložený inventář neexistuje.");
             return;
         }
         

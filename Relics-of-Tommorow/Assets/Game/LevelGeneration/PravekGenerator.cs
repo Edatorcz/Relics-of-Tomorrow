@@ -11,10 +11,10 @@ public class PravekGenerator : RoomBasedGenerator
     [SerializeField] private Color caveFloorColor = new Color(0.3f, 0.25f, 0.2f);
     
     [Header("Cave Shape Settings")]
-    [SerializeField] private int stalactiteCount = 5; // Počet stalaktitů (sníženo)
-    [SerializeField] private int stalagmiteCount = 8; // Počet stalagmitů (sníženo)
+    [SerializeField] private int stalactiteCount = 3; // Počet stalaktitů (sníženo)
+    [SerializeField] private int stalagmiteCount = 4; // Počet stalagmitů (sníženo)
     [SerializeField] private float rockFormationDensity = 0.2f; // Hustota kamenných formací
-    [SerializeField] private int torchesPerRoom = 6; // Počet pochodní na místnost
+    [SerializeField] private int torchesPerRoom = 4; // Počet pochodní na místnost
     [SerializeField] private float ceilingHeight = 15f; // Výška stropu (zvýšeno pro prostor)
     
     // Vizuální efekty
@@ -331,13 +331,13 @@ public class PravekGenerator : RoomBasedGenerator
         }
         
         // Stalagmity (rostou ze země)
-        int stalagmitesForRoom = Random.Range(stalagmiteCount / 2, stalagmiteCount);
+        int stalagmitesForRoom = Random.Range(stalagmiteCount / 2, stalagmiteCount + 1);
         for (int i = 0; i < stalagmitesForRoom; i++)
         {
             Vector3 position = room.center + new Vector3(
-                Random.Range(-halfSize * 0.7f, halfSize * 0.7f),
-                0f,
-                Random.Range(-halfSize * 0.7f, halfSize * 0.7f)
+                Random.Range(-halfSize * 0.6f, halfSize * 0.6f),
+                0f, // Přesně na zemi
+                Random.Range(-halfSize * 0.6f, halfSize * 0.6f)
             );
             
             CreateStalagmite(position, parent);
@@ -537,42 +537,77 @@ public class PravekGenerator : RoomBasedGenerator
         
         for (int i = 0; i < torchesPerRoom; i++)
         {
-            // Pozice poblíž stěn
+            // Pozice přímo na stěně
             float angle = (360f / torchesPerRoom) * i + Random.Range(-15f, 15f);
-            float distance = halfSize * Random.Range(0.7f, 0.85f);
+            float distance = halfSize - 0.3f; // Blíž ke stěně
             
             Vector3 position = room.center + new Vector3(
                 Mathf.Cos(angle * Mathf.Deg2Rad) * distance,
-                Random.Range(1f, 2f),
+                Random.Range(1.5f, 2.5f), // Výš na stěně
                 Mathf.Sin(angle * Mathf.Deg2Rad) * distance
             );
             
-            CreateTorch(position, parent);
+            // KONTROLA: Neklást pochodeň tam, kde je průchod do jiné místnosti
+            bool isTooCloseToConnection = false;
+            foreach (Room connectedRoom in room.connectedRooms)
+            {
+                Vector3 directionToConnection = (connectedRoom.center - room.center).normalized;
+                Vector3 directionToTorch = (new Vector3(position.x, room.center.y, position.z) - room.center).normalized;
+                
+                // Pokud je pochodeň ve směru průchodu (úhel < 30°), přeskoč ji
+                float dot = Vector3.Dot(directionToConnection, directionToTorch);
+                if (dot > 0.85f) // cos(30°) ≈ 0.866
+                {
+                    isTooCloseToConnection = true;
+                    break;
+                }
+            }
+            
+            if (isTooCloseToConnection)
+            {
+                continue; // Přeskočit tuto pochodeň - je v průchodu
+            }
+            
+            // Natočení směrem ke středu místnosti
+            Vector3 directionToCenter = (room.center - position).normalized;
+            Quaternion rotation = Quaternion.LookRotation(directionToCenter);
+            
+            CreateTorch(position, rotation, parent);
         }
     }
     
     /// <summary>
     /// Vytvoří jednu pochodeň s ohněm a světlem
     /// </summary>
-    protected void CreateTorch(Vector3 position, Transform parent)
+    protected void CreateTorch(Vector3 position, Quaternion rotation, Transform parent)
     {
         GameObject torchParent = new GameObject("Torch");
         torchParent.transform.parent = parent;
         torchParent.transform.position = position;
+        torchParent.transform.rotation = rotation;
         
-        // Dřevěná tyč pochodně
+        // Kamenný držák na stěně
+        GameObject bracket = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        bracket.name = "WallBracket";
+        bracket.transform.parent = torchParent.transform;
+        bracket.transform.localPosition = new Vector3(0, 0, -0.15f); // Za pochodní u stěny
+        bracket.transform.localScale = new Vector3(0.2f, 0.15f, 0.1f);
+        bracket.GetComponent<Renderer>().material.color = new Color(0.35f, 0.3f, 0.25f);
+        
+        // Dřevěná tyč pochodně - natočená směrem doplředu
         GameObject stick = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         stick.name = "TorchStick";
         stick.transform.parent = torchParent.transform;
-        stick.transform.localPosition = Vector3.zero;
-        stick.transform.localScale = new Vector3(0.08f, 0.5f, 0.08f);
+        stick.transform.localPosition = new Vector3(0, 0, 0.25f); // Dopředu od stěny
+        stick.transform.localRotation = Quaternion.Euler(90, 0, 0); // Horizontálně
+        stick.transform.localScale = new Vector3(0.08f, 0.35f, 0.08f);
         stick.GetComponent<Renderer>().material.color = new Color(0.3f, 0.2f, 0.1f);
         
-        // "Oheň" na vrcholu
+        // "Oheň" na konci tyče
         GameObject flame = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         flame.name = "Flame";
         flame.transform.parent = torchParent.transform;
-        flame.transform.localPosition = new Vector3(0, 0.6f, 0);
+        flame.transform.localPosition = new Vector3(0, 0, 0.6f); // Na konci tyče
         flame.transform.localScale = new Vector3(0.3f, 0.4f, 0.3f);
         
         Renderer flameRenderer = flame.GetComponent<Renderer>();
@@ -582,7 +617,7 @@ public class PravekGenerator : RoomBasedGenerator
         // Point Light pro osvětlení
         GameObject lightObj = new GameObject("TorchLight");
         lightObj.transform.parent = torchParent.transform;
-        lightObj.transform.localPosition = new Vector3(0, 0.6f, 0);
+        lightObj.transform.localPosition = new Vector3(0, 0, 0.6f); // Na konci tyče u ohně
         
         Light pointLight = lightObj.AddComponent<Light>();
         pointLight.type = LightType.Point;

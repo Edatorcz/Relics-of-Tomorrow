@@ -8,6 +8,9 @@ public class InventorySystem : MonoBehaviour
     [Header("Inventory Settings")]
     [SerializeField] private int inventorySize = 36; // Jako Minecraft: 27 hlavní + 9 hotbar
     
+    [Header("Debug - Obsah inventáře")]
+    [SerializeField] private List<string> debugInventoryContents = new List<string>();
+    
     private List<InventorySlot> slots;
     
     public System.Action OnInventoryChanged;
@@ -43,7 +46,23 @@ public class InventorySystem : MonoBehaviour
         
         int remainingQuantity = quantity;
         
-        // Nejdřív zkus přidat do existujících stacků
+        // PŘEDNOST: Hotbar sloty (0-8) - nejdřív zkus přidat do prázdných hotbar slotů
+        for (int i = 0; i < 9 && i < slots.Count; i++)
+        {
+            if (slots[i].IsEmpty())
+            {
+                remainingQuantity = slots[i].AddItem(item, remainingQuantity);
+                Debug.Log($"InventorySystem: Item '{item.itemName}' přidán do hotbar slotu {i}");
+                if (remainingQuantity <= 0)
+                {
+                    OnInventoryChanged?.Invoke();
+                    UpdateDebugDisplay();
+                    return true;
+                }
+            }
+        }
+        
+        // Nejdřív zkus přidat do existujících stacků (v celém inventáři)
         if (item.isStackable)
         {
             for (int i = 0; i < slots.Count; i++)
@@ -54,20 +73,21 @@ public class InventorySystem : MonoBehaviour
                     if (remainingQuantity <= 0)
                     {
                         OnInventoryChanged?.Invoke();
+                        UpdateDebugDisplay();
                         return true;
                     }
                 }
             }
         }
         
-        // Pak zkus přidat do prázdných slotů
+        // Pak zkus přidat do prázdných slotů ve zbytku inventáře (9+)
         while (remainingQuantity > 0)
         {
-            int emptySlotIndex = FindEmptySlot();
+            int emptySlotIndex = FindEmptySlotInInventory();
             if (emptySlotIndex == -1)
             {
-                Debug.Log("Inventář je plný!");
                 OnInventoryChanged?.Invoke();
+                UpdateDebugDisplay();
                 return false; // Inventář plný
             }
             
@@ -75,7 +95,20 @@ public class InventorySystem : MonoBehaviour
         }
         
         OnInventoryChanged?.Invoke();
+        UpdateDebugDisplay();
         return true;
+    }
+    
+    private void UpdateDebugDisplay()
+    {
+        debugInventoryContents.Clear();
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (!slots[i].IsEmpty())
+            {
+                debugInventoryContents.Add($"Slot {i}: {slots[i].item.itemName} x{slots[i].quantity}");
+            }
+        }
     }
     
     public bool RemoveItem(ItemData item, int quantity = 1)
@@ -131,6 +164,19 @@ public class InventorySystem : MonoBehaviour
     private int FindEmptySlot()
     {
         for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i].IsEmpty())
+                return i;
+        }
+        return -1;
+    }
+    
+    /// <summary>
+    /// Najde prázdný slot v hlavním inventáři (mimo hotbar sloty 0-8)
+    /// </summary>
+    private int FindEmptySlotInInventory()
+    {
+        for (int i = 9; i < slots.Count; i++)
         {
             if (slots[i].IsEmpty())
                 return i;

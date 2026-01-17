@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: "S\xEDla Mamuta"
   description: 
   icon: {fileID: 0}
+  worldModelPrefab: {fileID: 3870099558685946498, guid: 3d08d77273aca6c40a23a22b0f387d02, type: 3}
   maxStackSize: 1
   isStackable: 0
   itemType: 3

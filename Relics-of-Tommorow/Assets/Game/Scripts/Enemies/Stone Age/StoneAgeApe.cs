@@ -59,13 +59,6 @@ public class StoneAgeApe : EnemyBase
         useLineOfSight = false;
 
         ChangeState(EnemyState.Idle);
-        
-        // Debug informace
-        Debug.Log($"{gameObject.name}: StoneAgeApe initialized");
-        Debug.Log($"{gameObject.name}: Player reference: {(player != null ? player.name : "NULL")}");
-        Debug.Log($"{gameObject.name}: Detection range: {detectionRange}");
-        Debug.Log($"{gameObject.name}: NavMeshAgent: {(navMeshAgent != null ? "OK" : "MISSING")}");
-        Debug.Log($"{gameObject.name}: UseLineOfSight: {useLineOfSight}");
     }
 
     protected override void HandleChaseState()
@@ -74,12 +67,6 @@ public class StoneAgeApe : EnemyBase
 
     float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-    // Debug pozic každých 30 framů
-    if (Time.frameCount % 30 == 0)
-    {
-        Debug.Log($"{gameObject.name}: CHASE - Targeting player at: {player.position} (Distance: {distanceToPlayer:F1})");
-        Debug.Log($"{gameObject.name}: NavMesh destination: {(navMeshAgent.hasPath ? navMeshAgent.destination.ToString() : "No path")}");
-    }
 
     // původní logika
     if (canThrowRock && distanceToPlayer > attackRange && distanceToPlayer <= rockThrowRange &&
@@ -100,7 +87,6 @@ public class StoneAgeApe : EnemyBase
     if (navMeshAgent != null) 
     {
         navMeshAgent.SetDestination(player.position);
-        Debug.Log($"{gameObject.name}: Moving to player at: {player.position}");
     }
 }
 
@@ -136,12 +122,7 @@ public class StoneAgeApe : EnemyBase
 
     protected override void HandleIdleState()
     {
-        // Debug idle stavu
-        if (Time.frameCount % 180 == 0) // Každé 3 sekundy
-        {
-            Debug.Log($"{gameObject.name}: IDLE STATE - Still waiting...");
-        }
-        
+
         // Nepatroluj náhodně - zůstaň v idle, dokud neuvidíš hráče
         if (navMeshAgent != null && navMeshAgent.hasPath) navMeshAgent.ResetPath();
         if (Random.Range(0f, 1f) < 0.001f) PlayGruntSound();

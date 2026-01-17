@@ -30,6 +30,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float rollDuration = 0.5f;
     [SerializeField] private float rollCooldown = 1f;
     [SerializeField] private float rollInvulnerabilityDuration = 0.5f;
+    [SerializeField] private float rollStaminaCost = 30f; // Kolik staminy stojí dash
+    
+    [Header("Sprint Stamina Settings")]
+    [SerializeField] private float sprintStaminaDrainRate = 10f; // Kolik staminy ubíhá za sekundu při sprintování
+    [SerializeField] private float minStaminaForSprint = 5f; // Minimální stamina pro sprint
     
     [Header("Freeze Settings")]
     [SerializeField] private bool freezeOnStart = true; // Zmrazit hráče na začátku
@@ -50,6 +55,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 rollDirection;
     private float lastRollTime = -999f;
     private PlayerHealth playerHealth;
+    private PlayerCombat playerCombat;
     
     void Start()
     {
@@ -62,8 +68,9 @@ public class PlayerMovement : MonoBehaviour
         // RESET všeho
         movement = Vector3.zero;
         
-        // Získání reference na PlayerHealth
+        // Získání reference na PlayerHealth a PlayerCombat
         playerHealth = GetComponent<PlayerHealth>();
+        playerCombat = GetComponent<PlayerCombat>();
         
         // Freeze hráče na začátku pokud je to zapnuté
         if (freezeOnStart)
@@ -266,8 +273,27 @@ public class PlayerMovement : MonoBehaviour
             movement = new Vector3(horizontal, 0, vertical).normalized;
         }
         
-        // Kontrola běhání (Shift)
-        isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        // Kontrola běhání (Shift) - pouze pokud má hráč dostatek staminy
+        bool wantsToRun = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        
+        // Zkontrolovat staminu pro sprint
+        if (wantsToRun && playerCombat != null)
+        {
+            if (playerCombat.BlockStamina >= minStaminaForSprint)
+            {
+                isRunning = true;
+                // Odčítat staminu během sprintování
+                playerCombat.DrainStamina(sprintStaminaDrainRate * Time.deltaTime);
+            }
+            else
+            {
+                isRunning = false; // Nedostatek staminy
+            }
+        }
+        else
+        {
+            isRunning = wantsToRun;
+        }
         
         // ROLL - dvojité zmáčknutí Shift při běhání NEBO stisk CTRL při běhání
         if (Input.GetKeyDown(KeyCode.LeftControl) && isRunning && movement.magnitude > 0.1f && !isRolling)
@@ -336,6 +362,19 @@ public class PlayerMovement : MonoBehaviour
         // Kontrola cooldownu
         if (Time.time - lastRollTime < rollCooldown)
             return;
+        
+        // Kontrola staminy
+        if (playerCombat != null && playerCombat.BlockStamina < rollStaminaCost)
+        {
+            Debug.Log("PlayerMovement: Nedostatek staminy pro roll!");
+            return;
+        }
+        
+        // Odečíst staminu
+        if (playerCombat != null)
+        {
+            playerCombat.DrainStamina(rollStaminaCost);
+        }
         
         // Začít roll
         StartRoll();

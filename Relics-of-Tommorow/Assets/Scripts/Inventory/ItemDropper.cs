@@ -9,6 +9,7 @@ public class ItemDropper : MonoBehaviour
     [SerializeField] private float dropForce = 5f;
     [SerializeField] private float dropUpwardForce = 2f;
     [SerializeField] private float dropDistance = 2f;
+    [SerializeField] private float spawnHeightOffset = 0.5f; // Výška nad zemí
     
     void Awake()
     {
@@ -40,12 +41,12 @@ public class ItemDropper : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"Item '{item.itemName}' nemá přiřazený worldModelPrefab ani není nastaven itemPickupPrefab!");
             return;
         }
         
-        // Vytvoř pickup objekt na pozici
+        // Vytvoř pickup objekt na pozici (s Y offsetem)
         Vector3 spawnPosition = dropPosition + dropDirection.normalized * dropDistance;
+        spawnPosition.y += spawnHeightOffset; // Posun nahoru aby nebyl v zemi
         GameObject droppedItem = Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
         
         // Nastav ItemData a množství

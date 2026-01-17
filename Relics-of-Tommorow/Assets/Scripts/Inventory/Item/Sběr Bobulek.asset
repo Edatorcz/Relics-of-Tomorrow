@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: "Sb\u011Br Bobulek"
   description: 
   icon: {fileID: 0}
+  worldModelPrefab: {fileID: 5314368053603983117, guid: 612ca9c54cd4c3042bdabbeafc2c34d4, type: 3}
   maxStackSize: 64
   isStackable: 1
   itemType: 3

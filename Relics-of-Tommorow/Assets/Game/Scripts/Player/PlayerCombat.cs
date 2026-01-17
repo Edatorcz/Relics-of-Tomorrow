@@ -277,9 +277,25 @@ public class PlayerCombat : MonoBehaviour
         currentBlockStamina = Mathf.Min(maxBlockStamina, currentBlockStamina);
     }
     
+    public void DrainStamina(float amount)
+    {
+        currentBlockStamina -= amount;
+        currentBlockStamina = Mathf.Max(0, currentBlockStamina);
+    }
+    
     public void SetAttackDamage(float damage)
     {
         attackDamage = damage;
+    }
+    
+    public void SetAttackRange(float range)
+    {
+        attackRange = range;
+    }
+    
+    public void SetAttackCooldown(float cooldown)
+    {
+        attackCooldown = cooldown;
     }
     
     // Debug vizualizace

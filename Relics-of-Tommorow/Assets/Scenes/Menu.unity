@@ -2179,7 +2179,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: 'Start
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4948,6 +4950,58 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1433206259
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1433206261}
+  - component: {fileID: 1433206260}
+  m_Layer: 0
+  m_Name: EpochManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1433206260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1433206259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 106db4a52380b35468fa3d9e3f24d28f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  epochScenes:
+  - "Prav\u011Bk"
+  - "Starov\u011Bk"
+  - "St\u0159edov\u011Bk"
+  - Budoucnost
+  transitionDelay: 2
+  loopEpochs: 1
+  gameOverScene: Menu
+--- !u!4 &1433206261
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1433206259}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 131.36717, y: -24.031336, z: 12.037162}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1437290458
 GameObject:
   m_ObjectHideFlags: 0
@@ -5485,16 +5539,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 599e4e98b843cab47b6c62544e81172a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  autoLayoutOnStart: 1
-  layoutInEditor: 0
-  buttonWidth: 300
-  buttonHeight: 60
-  buttonSpacing: 20
-  titlePosition: {x: 0, y: 200}
-  settingItemHeight: 40
-  settingSpacing: 15
-  labelWidth: 200
-  controlWidth: 300
 --- !u!114 &1534451547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5507,17 +5551,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c5b8194c6188f64eaade20ccbc5ac9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainMenuPanel: {fileID: 2085313194}
-  settingsPanel: {fileID: 1487437788}
-  startButton: {fileID: 2106272158}
-  tutorialButton: {fileID: 1706373157}
-  settingsButton: {fileID: 1192472917}
-  exitButton: {fileID: 80196557}
-  gameSceneName: GameScene
-  tutorialSceneName: TutorialScene
-  menuAudioSource: {fileID: 0}
-  buttonClickSound: {fileID: 0}
-  menuMusic: {fileID: 0}
 --- !u!4 &1534451548
 Transform:
   m_ObjectHideFlags: 0
@@ -7651,7 +7684,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2106272156}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 102900000, guid: 94a8e156a8d92da4685c7aced02492ba, type: 3}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2127037663
 GameObject:
   m_ObjectHideFlags: 0
@@ -7748,3 +7793,4 @@ SceneRoots:
   - {fileID: 1890120428}
   - {fileID: 391058715}
   - {fileID: 1534451548}
+  - {fileID: 1433206261}

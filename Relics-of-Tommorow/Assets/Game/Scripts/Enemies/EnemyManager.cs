@@ -65,7 +65,6 @@ public class EnemyManager : MonoBehaviour
             RegisterAllEnemiesInScene();
         }
         
-        Debug.Log($"EnemyManager: Initialized with {allEnemies.Count} enemies");
     }
     
     void Update()
@@ -107,7 +106,6 @@ public class EnemyManager : MonoBehaviour
         
         OnEnemyCountChanged?.Invoke(allEnemies.Count);
         
-        Debug.Log($"EnemyManager: Registered enemy {enemy.name}");
     }
     
     public void UnregisterEnemy(EnemyBase enemy)
@@ -123,7 +121,6 @@ public class EnemyManager : MonoBehaviour
         
         OnEnemyCountChanged?.Invoke(allEnemies.Count);
         
-        Debug.Log($"EnemyManager: Unregistered enemy {enemy.name}");
     }
     
     private void HandleEnemyDeath(EnemyBase deadEnemy)
@@ -138,13 +135,10 @@ public class EnemyManager : MonoBehaviour
         {
             OnAllEnemiesDefeated?.Invoke();
         }
-        
-        Debug.Log($"EnemyManager: Enemy {deadEnemy.name} died. Total killed: {totalEnemiesKilled}");
     }
     
     private void HandlePlayerDetected(EnemyBase enemy)
     {
-        Debug.Log($"EnemyManager: {enemy.name} detected player");
         
         // Můžeme zde implementovat alert systém pro ostatní nepřátele
         AlertNearbyEnemies(enemy.transform.position, 10f);
@@ -183,7 +177,6 @@ public class EnemyManager : MonoBehaviour
             
             OnEnemySpawned?.Invoke(enemyScript);
             
-            Debug.Log($"EnemyManager: Spawned {enemyPrefab.name} at {position}");
         }
         
         return enemyScript;
@@ -193,10 +186,6 @@ public class EnemyManager : MonoBehaviour
     {
         // Zvýšit health a damage podle difficulty
         enemy.transform.localScale *= (1f + (difficultyMultiplier - 1f) * 0.1f); // Mírné zvětšení
-        
-        // Přístup k private fieldsům přes reflection nebo public properties
-        // Pro jednoduchost pouze debug log
-        Debug.Log($"EnemyManager: Applied difficulty {difficultyMultiplier:F2} to {enemy.name}");
     }
     
     private void UpdateDifficulty()
@@ -273,11 +262,6 @@ public class EnemyManager : MonoBehaviour
         if (!Application.isPlaying) return;
         
         GUILayout.BeginArea(new Rect(10, 10, 300, 200));
-        GUILayout.Label($"Enemies Active: {allEnemies.Count}/{maxEnemyCount}");
-        GUILayout.Label($"Total Spawned: {totalEnemiesSpawned}");
-        GUILayout.Label($"Total Killed: {totalEnemiesKilled}");
-        GUILayout.Label($"Difficulty: {difficultyMultiplier:F2}");
-        GUILayout.Label($"Auto Spawn: {enableAutoSpawn}");
         GUILayout.EndArea();
     }
 }

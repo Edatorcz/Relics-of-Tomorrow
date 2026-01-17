@@ -17,6 +17,72 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IBeginDragHa
     private static InventorySlotUI draggedSlot;
     private static GameObject draggedIcon;
     
+    void Awake()
+    {
+        // Automaticky najdi nebo vytvoř komponenty, pokud nejsou přiřazeny
+        if (backgroundImage == null)
+        {
+            backgroundImage = GetComponent<Image>();
+        }
+        
+        if (itemIcon == null)
+        {
+            Transform iconTransform = transform.Find("ItemIcon");
+            if (iconTransform != null)
+            {
+                itemIcon = iconTransform.GetComponent<Image>();
+            }
+            else
+            {
+                // Vytvoř nový GameObject pro ikonu
+                GameObject iconObj = new GameObject("ItemIcon");
+                iconObj.transform.SetParent(transform, false);
+                itemIcon = iconObj.AddComponent<Image>();
+                itemIcon.raycastTarget = false;
+                
+                // Nastav RectTransform aby vyplnil slot
+                RectTransform iconRect = iconObj.GetComponent<RectTransform>();
+                iconRect.anchorMin = Vector2.zero;
+                iconRect.anchorMax = Vector2.one;
+                iconRect.sizeDelta = Vector2.zero;
+                iconRect.anchoredPosition = Vector2.zero;
+            }
+        }
+        
+        if (quantityText == null)
+        {
+            Transform textTransform = transform.Find("QuantityText");
+            if (textTransform != null)
+            {
+                quantityText = textTransform.GetComponent<TextMeshProUGUI>();
+            }
+            else
+            {
+                // Vytvoř nový GameObject pro text
+                GameObject textObj = new GameObject("QuantityText");
+                textObj.transform.SetParent(transform, false);
+                quantityText = textObj.AddComponent<TextMeshProUGUI>();
+                quantityText.raycastTarget = false;
+                quantityText.alignment = TextAlignmentOptions.BottomRight;
+                quantityText.fontSize = 14;
+                quantityText.color = Color.white;
+                
+                // Nastav RectTransform
+                RectTransform textRect = textObj.GetComponent<RectTransform>();
+                textRect.anchorMin = new Vector2(0.5f, 0);
+                textRect.anchorMax = new Vector2(1, 0.5f);
+                textRect.sizeDelta = Vector2.zero;
+                textRect.anchoredPosition = Vector2.zero;
+            }
+        }
+        
+        // Ujisti se, že ikona je vždy vypnutá na začátku
+        if (itemIcon != null)
+        {
+            itemIcon.enabled = false;
+        }
+    }
+    
     public void Initialize(int index)
     {
         slotIndex = index;
@@ -60,23 +126,46 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IBeginDragHa
     
     public void UpdateSlot(InventorySlot slot)
     {
+        // Kontrola, zda jsou UI komponenty přiřazeny
+        if (itemIcon == null)
+        {
+            return;
+        }
+        
         if (slot == null || slot.IsEmpty())
         {
             itemIcon.enabled = false;
-            quantityText.text = "";
+            if (quantityText != null)
+                quantityText.text = "";
+            return;
+        }
+        
+        // Kontrola, zda item má ikonu
+        if (slot.item == null)
+        {
+            itemIcon.enabled = false;
+            return;
+        }
+        
+        if (slot.item.icon == null)
+        {
+            itemIcon.enabled = false;
             return;
         }
         
         itemIcon.enabled = true;
         itemIcon.sprite = slot.item.icon;
         
-        if (slot.quantity > 1)
+        if (quantityText != null)
         {
-            quantityText.text = slot.quantity.ToString();
-        }
-        else
-        {
-            quantityText.text = "";
+            if (slot.quantity > 1)
+            {
+                quantityText.text = slot.quantity.ToString();
+            }
+            else
+            {
+                quantityText.text = "";
+            }
         }
     }
     

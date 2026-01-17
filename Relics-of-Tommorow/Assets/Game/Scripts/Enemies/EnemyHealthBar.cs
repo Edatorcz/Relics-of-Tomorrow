@@ -39,7 +39,6 @@ public class EnemyHealthBar : MonoBehaviour
         
         if (enemy == null)
         {
-            Debug.LogError("EnemyHealthBar: No EnemyBase found!");
             enabled = false;
             return;
         }

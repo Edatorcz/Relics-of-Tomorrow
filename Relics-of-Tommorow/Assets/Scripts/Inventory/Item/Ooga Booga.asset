@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Ooga Booga
   description: 
   icon: {fileID: 0}
+  worldModelPrefab: {fileID: 3048364654246797770, guid: 8f14c63cde452df41be6afee93a0b97e, type: 3}
   maxStackSize: 1
   isStackable: 0
   itemType: 3

@@ -14,12 +14,17 @@ public class InventoryUI : MonoBehaviour
     
     private InventorySlotUI[] slotUIs;
     private bool isInventoryOpen = false;
+    private Crosshair crosshair;
     
     void Start()
     {
+        if (inventoryPanel == null)
+        {
+            return;
+        }
+        
         if (InventorySystem.Instance == null)
         {
-            Debug.LogError("InventorySystem nenalezen! Ujisti se, že existuje InventoryManager ve scéně.");
             return;
         }
         
@@ -27,6 +32,9 @@ public class InventoryUI : MonoBehaviour
         CreateSlots();
         
         InventorySystem.Instance.OnInventoryChanged += UpdateUI;
+        
+        // Najdi crosshair
+        crosshair = FindFirstObjectByType<Crosshair>();
     }
     
     void Update()
@@ -63,6 +71,8 @@ public class InventoryUI : MonoBehaviour
     public void ToggleInventory()
     {
         isInventoryOpen = !isInventoryOpen;
+        Debug.Log($"ToggleInventory voláno! isInventoryOpen = {isInventoryOpen}");
+        
         inventoryPanel.SetActive(isInventoryOpen);
         
         // Uvolnit/zamknout kurzor
@@ -70,11 +80,19 @@ public class InventoryUI : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            
+            // Skryj crosshair
+            if (crosshair != null)
+                crosshair.SetVisible(false);
         }
         else
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+            
+            // Zobraz crosshair
+            if (crosshair != null)
+                crosshair.SetVisible(true);
         }
         
         UpdateUI();

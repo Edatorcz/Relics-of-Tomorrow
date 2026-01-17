@@ -265,7 +265,6 @@ public class StoneAgeGiant : EnemyBase
                 float finalDamage = groundSlamDamage * damageMultiplier;
                 
                 playerHealth.TakeDamage(finalDamage);
-                Debug.Log($"{gameObject.name}: Ground slam hit for {finalDamage:F1} damage!");
             }
         }
         
@@ -288,7 +287,6 @@ public class StoneAgeGiant : EnemyBase
         // Silný melee útok
         damage = 30f;
         
-        Debug.Log($"{gameObject.name}: Giant smash attack!");
     }
     
     private void CheckDefensiveMode()

@@ -23,13 +23,50 @@ public class ItemPickup : MonoBehaviour
     
     void Start()
     {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        // Najdi hráče přes hlavní kameru (kamera je child hráče)
+        if (Camera.main != null)
         {
-            playerTransform = player.transform;
+            // Kamera je child hráče, takže parent kamery je hráč
+            Transform cameraParent = Camera.main.transform.parent;
+            if (cameraParent != null)
+            {
+                playerTransform = cameraParent;
+                Debug.Log($"ItemPickup: Hráč nalezen přes kameru pro {gameObject.name}");
+            }
+            else
+            {
+                // Pokud kamera nemá parenta, použij přímo kameru
+                playerTransform = Camera.main.transform;
+                Debug.Log($"ItemPickup: Použita přímo kamera (nemá parenta) pro {gameObject.name}");
+            }
+        }
+        
+        // Fallback: zkus najít podle tagu
+        if (playerTransform == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                playerTransform = player.transform;
+                Debug.Log($"ItemPickup: Hráč nalezen podle tagu pro {gameObject.name}");
+            }
+            else
+            {
+                Debug.LogError($"ItemPickup: Hráč NENALEZEN pro {gameObject.name}! Zkontroluj že Camera.main existuje nebo hráč má tag 'Player'");
+            }
         }
         
         startPosition = transform.position;
+        
+        // Debug ItemData
+        if (itemData != null)
+        {
+            Debug.Log($"ItemPickup {gameObject.name}: ItemData = {itemData.itemName}");
+        }
+        else
+        {
+            Debug.LogWarning($"ItemPickup {gameObject.name}: ItemData je NULL! Item nepůjde sebrat!");
+        }
         
         // Přidat světlo
         CreateItemLight();
@@ -64,7 +101,7 @@ public class ItemPickup : MonoBehaviour
         var main = particles.main;
         main.startLifetime = 1.5f;
         main.startSpeed = 0.5f;
-        main.startSize = 0.03f; // Malinké částice
+        main.startSize = 0.015f; // Malinké částice
         main.startColor = new Color(1f, 0.9f, 0.4f, 0.8f); // Zlatá barva
         main.maxParticles = 50;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -110,6 +147,29 @@ public class ItemPickup : MonoBehaviour
     
     void Update()
     {
+        // Pokud ještě nemáme hráče, zkus ho najít
+        if (playerTransform == null)
+        {
+            TryFindPlayer();
+            if (playerTransform == null)
+            {
+                return; // Stále nemáme hráče, zkusíme příště
+            }
+        }
+        
+        // Ověř že playerTransform stále existuje (nebyl zničen)
+        if (playerTransform == null || playerTransform.gameObject == null)
+        {
+            playerTransform = null; // Reset reference
+            return;
+        }
+        
+        // Kontrola jestli jsme equipped (child ItemHolder/Hand)
+        if (transform.parent != null && (transform.parent.name == "Hand" || transform.parent.name == "ItemHolder"))
+        {
+            return; // Jsme equipnutý, neděláme bobování/rotaci
+        }
+        
         // Rotace a bobování
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime);
         float newY = startPosition.y + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
@@ -122,32 +182,88 @@ public class ItemPickup : MonoBehaviour
         }
         
         // Kontrola vzdálenosti od hráče
-        if (playerTransform != null)
+        float distance = Vector3.Distance(transform.position, playerTransform.position);
+        canPickup = distance <= pickupRange;
+        
+        // Debug: zobraz kdy je item v dosahu
+        if (canPickup && Time.frameCount % 60 == 0) // Každou sekundu
         {
-            float distance = Vector3.Distance(transform.position, playerTransform.position);
-            canPickup = distance <= pickupRange;
-            
-            if (canPickup && Input.GetKeyDown(pickupKey))
+            Debug.Log($"<color=green>ItemPickup {gameObject.name}: V DOSAHU! Vzdálenost={distance:F2}m (range={pickupRange}), Stiskni {pickupKey}</color>");
+            Debug.Log($"  - ItemData: {(itemData != null ? itemData.itemName : "NULL")}");
+            Debug.Log($"  - InventorySystem.Instance: {(InventorySystem.Instance != null ? "OK" : "NULL")}");
+        }
+        
+        if (Input.GetKeyDown(pickupKey))
+        {
+            Debug.Log($"<color=yellow>F STISKNUTO! canPickup={canPickup}, distance={distance:F2}m</color>");
+            if (canPickup)
             {
+                Debug.Log($"<color=cyan>Volám Pickup()...</color>");
                 Pickup();
             }
         }
     }
     
+    private void TryFindPlayer()
+    {
+        // Nejdřív zkus tag
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            Debug.Log($"<color=lime>ItemPickup: Hráč NALEZEN podle tagu!</color>");
+            return;
+        }
+        
+        // Zkus přes kameru
+        if (Camera.main != null)
+        {
+            Transform cameraParent = Camera.main.transform.parent;
+            if (cameraParent != null)
+            {
+                playerTransform = cameraParent;
+                Debug.Log($"<color=lime>ItemPickup: Hráč NALEZEN přes kameru!</color>");
+                return;
+            }
+        }
+        
+        // Zkus najít PlayerMovement
+        PlayerMovement pm = FindFirstObjectByType<PlayerMovement>();
+        if (pm != null)
+        {
+            playerTransform = pm.transform;
+            Debug.Log($"<color=lime>ItemPickup: Hráč NALEZEN přes PlayerMovement!</color>");
+            return;
+        }
+    }
+    
     private void Pickup()
     {
-        if (InventorySystem.Instance != null)
+        Debug.Log($"ItemPickup.Pickup() voláno pro {gameObject.name}");
+        
+        if (itemData == null)
         {
-            bool success = InventorySystem.Instance.AddItem(itemData, quantity);
-            if (success)
-            {
-                Debug.Log($"Sebral jsi {quantity}x {itemData.itemName}");
-                Destroy(gameObject);
-            }
-            else
-            {
-                Debug.Log("Inventář je plný!");
-            }
+            Debug.LogError($"ItemPickup {gameObject.name}: itemData je NULL! Nelze sebrat!");
+            return;
+        }
+        
+        if (InventorySystem.Instance == null)
+        {
+            Debug.LogError($"ItemPickup {gameObject.name}: InventorySystem.Instance je NULL!");
+            return;
+        }
+        
+        Debug.Log($"ItemPickup: Pokus o přidání {itemData.itemName} do inventáře");
+        bool success = InventorySystem.Instance.AddItem(itemData, quantity);
+        
+        if (success)
+        {
+            Debug.Log($"ItemPickup: {itemData.itemName} úspěšně přidán do inventáře!");
+            Destroy(gameObject);
+        }
+        else
+        {
+            Debug.LogWarning($"ItemPickup: Nepodařilo se přidat {itemData.itemName} - inventář plný?");
         }
     }
     
@@ -162,6 +278,8 @@ public class ItemPickup : MonoBehaviour
     {
         itemData = data;
         quantity = amount;
+        
+        Debug.Log($"ItemPickup.SetItemData() voláno: {gameObject.name} -> ItemData = {(data != null ? data.itemName : "NULL")}");
         
         // Aktualizuj vizuál podle ikony itemu
         UpdateVisuals();

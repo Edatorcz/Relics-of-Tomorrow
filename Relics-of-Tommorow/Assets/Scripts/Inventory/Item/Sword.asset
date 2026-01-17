@@ -17,6 +17,14 @@ MonoBehaviour:
 
 '
   icon: {fileID: 21300000, guid: 524b7f6cc3e65b34fb3c55ab1b82faf2, type: 3}
+  worldModelPrefab: {fileID: 1274643356521272846, guid: 319a3d5d32489ea469f561367108efef, type: 3}
   maxStackSize: 1
   isStackable: 0
   itemType: 1
+  weaponStats:
+    damage: 50
+    range: 4
+    attackSpeed: 2
+    defenseValue: 25
+    spawnChance: 50
+    isBossLoot: 1

@@ -6,7 +6,7 @@ public class HotbarUI : MonoBehaviour
 {
     [Header("Settings")]
     [SerializeField] private int hotbarSize = 9; // Spodní řada jako v Minecraftu
-    [SerializeField] private int hotbarStartIndex = 27; // První 27 slotů je hlavní inventář
+    [SerializeField] private int hotbarStartIndex = 0; // Hotbar začíná od slotu 0 (sloty 0-8)
     
     [Header("UI References")]
     [SerializeField] private Transform hotbarParent;
@@ -18,12 +18,21 @@ public class HotbarUI : MonoBehaviour
     
     void Start()
     {
+        // FORCE hotbarStartIndex na 0 (přepíše hodnotu z Inspectoru)
+        hotbarStartIndex = 0;
+        
+        Debug.Log("HotbarUI: Start() - Inicializace hotbaru");
         CreateHotbarSlots();
         UpdateSelection();
         
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.OnInventoryChanged += UpdateHotbar;
+            Debug.Log("HotbarUI: Připojen k InventorySystem");
+        }
+        else
+        {
+            Debug.LogError("HotbarUI: InventorySystem.Instance je NULL!");
         }
     }
     
@@ -34,12 +43,28 @@ public class HotbarUI : MonoBehaviour
     
     private void CreateHotbarSlots()
     {
+        if (hotbarSlotPrefab == null)
+        {
+            return;
+        }
+        
+        if (hotbarParent == null)
+        {
+            return;
+        }
+        
         hotbarSlots = new InventorySlotUI[hotbarSize];
         
         for (int i = 0; i < hotbarSize; i++)
         {
             GameObject slotObj = Instantiate(hotbarSlotPrefab, hotbarParent);
             InventorySlotUI slotUI = slotObj.GetComponent<InventorySlotUI>();
+            
+            if (slotUI == null)
+            {
+                slotUI = slotObj.AddComponent<InventorySlotUI>();
+            }
+            
             slotUI.Initialize(hotbarStartIndex + i);
             hotbarSlots[i] = slotUI;
             
@@ -59,6 +84,7 @@ public class HotbarUI : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
+                Debug.Log($"HotbarUI: Stisknuta klávesa {i + 1}");
                 SelectSlot(i);
             }
         }
@@ -67,6 +93,7 @@ public class HotbarUI : MonoBehaviour
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0)
         {
+            Debug.Log($"HotbarUI: Mouse scroll: {scroll}");
             if (scroll > 0)
             {
                 SelectSlot((selectedSlotIndex - 1 + hotbarSize) % hotbarSize);
@@ -89,12 +116,19 @@ public class HotbarUI : MonoBehaviour
         if (index < 0 || index >= hotbarSize) return;
         
         selectedSlotIndex = index;
+        Debug.Log($"HotbarUI: Vybrán slot {index + 1}");
         UpdateSelection();
+        UpdateEquippedItem();
     }
     
     private void UpdateSelection()
     {
-        if (selectionHighlight != null && hotbarSlots.Length > selectedSlotIndex)
+        if (hotbarSlots == null || hotbarSlots.Length == 0)
+        {
+            return;
+        }
+        
+        if (selectionHighlight != null && selectedSlotIndex < hotbarSlots.Length && hotbarSlots[selectedSlotIndex] != null)
         {
             selectionHighlight.transform.position = hotbarSlots[selectedSlotIndex].transform.position;
         }
@@ -102,15 +136,18 @@ public class HotbarUI : MonoBehaviour
     
     private void UseSelectedItem()
     {
+        if (InventorySystem.Instance == null)
+        {
+            return;
+        }
+        
         int inventoryIndex = hotbarStartIndex + selectedSlotIndex;
         InventorySlot slot = InventorySystem.Instance.GetSlot(inventoryIndex);
         
         if (slot != null && !slot.IsEmpty())
         {
             // Zde můžeš implementovat logiku používání itemů
-            Debug.Log($"Použil jsi: {slot.item.itemName}");
             
-            // Například pro consumables:
             if (slot.item.itemType == ItemData.ItemType.Consumable)
             {
                 // Použij item a odeber ze stacku
@@ -128,13 +165,38 @@ public class HotbarUI : MonoBehaviour
             InventorySlot slot = InventorySystem.Instance.GetSlot(inventoryIndex);
             hotbarSlots[i].UpdateSlot(slot);
         }
+        
+        // Aktualizuj item v ruce když se inventář změní
+        UpdateEquippedItem();
     }
     
     public ItemData GetSelectedItem()
     {
+        if (InventorySystem.Instance == null)
+        {
+            Debug.LogError("HotbarUI.GetSelectedItem(): InventorySystem.Instance je NULL!");
+            return null;
+        }
+        
         int inventoryIndex = hotbarStartIndex + selectedSlotIndex;
+        Debug.Log($"HotbarUI.GetSelectedItem(): selectedSlotIndex={selectedSlotIndex}, hotbarStartIndex={hotbarStartIndex}, inventoryIndex={inventoryIndex}");
+        
         InventorySlot slot = InventorySystem.Instance.GetSlot(inventoryIndex);
-        return slot != null && !slot.IsEmpty() ? slot.item : null;
+        
+        if (slot == null)
+        {
+            Debug.LogWarning($"HotbarUI.GetSelectedItem(): Slot {inventoryIndex} je NULL!");
+            return null;
+        }
+        
+        if (slot.IsEmpty())
+        {
+            Debug.Log($"HotbarUI.GetSelectedItem(): Slot {inventoryIndex} je prázdný");
+            return null;
+        }
+        
+        Debug.Log($"HotbarUI.GetSelectedItem(): Vrací item '{slot.item.itemName}' ze slotu {inventoryIndex}");
+        return slot.item;
     }
     
     public int GetSelectedSlotIndex()
@@ -142,8 +204,45 @@ public class HotbarUI : MonoBehaviour
         return selectedSlotIndex;
     }
     
-    void OnDestroy()
+    /// <summary>
+    /// Aktualizuje item držený v ruce podle vybraného slotu
+    /// </summary>
+    private void UpdateEquippedItem()
     {
+        if (ItemHolder.Instance == null)
+        {
+            // Pokusi se najít ItemHolder ve scéně
+            ItemHolder holder = FindFirstObjectByType<ItemHolder>();
+            if (holder == null)
+            {
+                // Vytvoř ItemHolder automaticky na hráči
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    holder = player.AddComponent<ItemHolder>();
+                    Debug.Log("HotbarUI: Automaticky vytvořen ItemHolder na hráči");
+                }
+                else
+                {
+                    Debug.LogWarning("HotbarUI: Nelze najít hráče s tagem 'Player'!");
+                    return;
+                }
+            }
+        }
+        
+        ItemData selectedItem = GetSelectedItem();
+        if (selectedItem != null)
+        {
+            Debug.Log($"HotbarUI: UpdateEquippedItem() - equipuji '{selectedItem.itemName}'");
+        }
+        else
+        {
+            Debug.Log("HotbarUI: UpdateEquippedItem() - žádný item ve slotu");
+        }
+        ItemHolder.Instance.EquipItem(selectedItem);
+    }
+    
+    void OnDestroy()    {
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.OnInventoryChanged -= UpdateHotbar;

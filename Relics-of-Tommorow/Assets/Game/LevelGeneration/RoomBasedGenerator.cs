@@ -46,11 +46,14 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     [SerializeField] protected float playerSpawnHeight = 5f; // Zvýšeno - hráč spadne na zem při freeze
     
     [Header("Item Settings")]
-    [SerializeField] protected GameObject[] itemPrefabs; // Itemy pro prázdné místnosti
+    [SerializeField] protected ItemData[] availableItems; // ItemData pro prázdné místnosti
+    [SerializeField] protected GameObject itemPickupPrefab; // Prefab s ItemPickup komponentou pro spawn
     [SerializeField] protected int itemsPerTreasureRoom = 3;
     
     [Header("Boss Settings")]
     [SerializeField] protected GameObject bossPrefab; // Boss pro finální místnost
+    [SerializeField] protected GameObject epochPortalPrefab; // Portál do další epochy
+    [SerializeField] protected Vector3 portalOffset = new Vector3(0, 0, 15); // Offset portálu od středu boss místnosti
     [SerializeField] protected float bossRoomSizeMultiplier = 2.0f; // Násobič velikosti boss místnosti
     
     protected List<Room> rooms = new List<Room>();
@@ -64,8 +67,10 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         public List<GameObject> enemies;
         public List<GameObject> decorations;
         public GameObject floor;
+        public GameObject portal; // Portál v Boss místnosti
         public float calculatedSize; // Vypočtená velikost místnosti
         public RoomType roomType; // Typ místnosti
+        public Vector3 direction; // Směr místnosti (pro portál positioning)
         [System.NonSerialized] public List<Room> connectedRooms; // Připojené místnosti
         
         public Room(Vector3 center, int number)
@@ -75,8 +80,10 @@ public abstract class RoomBasedGenerator : MonoBehaviour
             this.enemies = new List<GameObject>();
             this.decorations = new List<GameObject>();
             this.floor = null;
+            this.portal = null;
             this.calculatedSize = 0f;
             this.roomType = RoomType.Normal;
+            this.direction = Vector3.zero;
             this.connectedRooms = new List<Room>();
         }
     }
@@ -119,6 +126,12 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     
     protected virtual void ClearLevel()
     {
+        // Vymazat optimalizaci
+        if (RoomOptimizer.Instance != null)
+        {
+            RoomOptimizer.Instance.ClearRooms();
+        }
+        
         foreach (Transform child in transform)
         {
             Destroy(child.gameObject);
@@ -256,6 +269,7 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         Room bossRoom = new Room(bossRoomPosition, rooms.Count);
         bossRoom.calculatedSize = bossRoomSize;
         bossRoom.roomType = RoomType.Boss;
+        bossRoom.direction = direction; // Uložit směr pro portál
         rooms.Add(bossRoom);
         
         // Propojit s poslední místností
@@ -324,6 +338,13 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         foreach (Room room in rooms)
         {
             CreateRoomStructure(room);
+            
+            // Registrovat místnost pro optimalizaci
+            if (RoomOptimizer.Instance != null && room.floor != null)
+            {
+                GameObject roomParent = room.floor.transform.parent.gameObject;
+                RoomOptimizer.Instance.RegisterRoom(roomParent, room.center);
+            }
         }
     }
     
@@ -625,28 +646,162 @@ public abstract class RoomBasedGenerator : MonoBehaviour
     
     protected virtual void SpawnItemsInRoom(Room room)
     {
-        if (itemPrefabs == null || itemPrefabs.Length == 0)
+        Debug.Log($"=== SpawnItemsInRoom START pro room {room.roomNumber} ===");
+        
+        if (availableItems == null || availableItems.Length == 0)
         {
-            Debug.LogWarning($"Room {room.roomNumber}: Žádné item prefaby nejsou přiřazené");
+            Debug.LogError($"Room {room.roomNumber}: availableItems pole je NULL nebo prázdné! Přiřaď ItemData v Inspectoru!");
             return;
         }
+        
+        Debug.Log($"Room {room.roomNumber}: Nalezeno {availableItems.Length} dostupných ItemData");
+        Debug.Log($"Room {room.roomNumber}: itemPickupPrefab = {(itemPickupPrefab != null ? itemPickupPrefab.name : "NULL")}");
         
         GameObject itemParent = new GameObject("Items");
         itemParent.transform.parent = room.floor.transform.parent;
         
         for (int i = 0; i < itemsPerTreasureRoom; i++)
         {
-            Vector3 position = GetRandomPositionInRoom(room);
-            GameObject itemPrefab = itemPrefabs[Random.Range(0, itemPrefabs.Length)];
-            
-            if (itemPrefab != null)
+            // Vybrat náhodnou ItemData (ale ne boss loot!)
+            ItemData selectedItem = null;
+            int attempts = 0;
+            while (selectedItem == null && attempts < 50)
             {
-                GameObject item = Instantiate(itemPrefab, position, Quaternion.identity, itemParent.transform);
-                item.name = $"{itemPrefab.name}_{i}";
+                ItemData candidate = availableItems[Random.Range(0, availableItems.Length)];
+                
+                // Kontrola jestli to není boss loot (boss loot se má spawnovat jen z bosů)
+                if (candidate != null && candidate.itemType == ItemData.ItemType.Weapon && 
+                    candidate.weaponStats != null && candidate.weaponStats.isBossLoot)
+                {
+                    attempts++;
+                    continue; // Přeskočit boss loot
+                }
+                
+                selectedItem = candidate;
+                break;
+            }
+            
+            if (selectedItem == null)
+            {
+                Debug.LogWarning($"Room {room.roomNumber}: Nepodařilo se najít non-boss item po {attempts} pokusech!");
+                continue;
+            }
+            
+            Debug.Log($"Room {room.roomNumber}: Spawning item {i}: {selectedItem.itemName}");
+            
+            Vector3 position = GetRandomPositionInRoom(room);
+            position.y = 1f; // Výška nad zemí
+            
+            GameObject spawnedItem = null;
+            ItemPickup pickup = null;
+            
+            // PRIORITA 1: Použít itemPickupPrefab pokud existuje
+            if (itemPickupPrefab != null)
+            {
+                Debug.Log($"  -> Používám itemPickupPrefab: {itemPickupPrefab.name}");
+                spawnedItem = Instantiate(itemPickupPrefab, position, Quaternion.identity, itemParent.transform);
+                spawnedItem.name = $"Pickup_{selectedItem.itemName}_{i}";
+                
+                pickup = spawnedItem.GetComponent<ItemPickup>();
+                if (pickup != null)
+                {
+                    Debug.Log($"  -> ItemPickup komponenta nalezena, nastavuji ItemData");
+                    pickup.SetItemData(selectedItem, 1);
+                }
+                else
+                {
+                    Debug.LogError($"  -> ItemPickupPrefab '{itemPickupPrefab.name}' NEMÁ ItemPickup komponentu!");
+                }
+            }
+            // PRIORITA 2: Použít worldModelPrefab z ItemData
+            else if (selectedItem.worldModelPrefab != null)
+            {
+                Debug.Log($"  -> Používám worldModelPrefab z ItemData: {selectedItem.worldModelPrefab.name}");
+                
+                // DEAKTIVOVAT prefab před instantiate aby se Start() nezavolal okamžitě
+                bool wasActive = selectedItem.worldModelPrefab.activeSelf;
+                selectedItem.worldModelPrefab.SetActive(false);
+                
+                spawnedItem = Instantiate(selectedItem.worldModelPrefab, position, Quaternion.identity, itemParent.transform);
+                spawnedItem.name = $"Item_{selectedItem.itemName}_{i}";
+                
+                // Přidat collider pokud chybí
+                Collider existingCollider = spawnedItem.GetComponent<Collider>();
+                if (existingCollider == null)
+                {
+                    Debug.Log($"  -> Přidávám SphereCollider");
+                    SphereCollider collider = spawnedItem.AddComponent<SphereCollider>();
+                    collider.isTrigger = true; // TRIGGER pro pickup!
+                    collider.radius = 0.5f;
+                }
+                else
+                {
+                    // Pokud je to MeshCollider, musí být convex aby mohl být trigger
+                    MeshCollider meshCol = existingCollider as MeshCollider;
+                    if (meshCol != null)
+                    {
+                        Debug.Log($"  -> Nalezen MeshCollider, přidávám SphereCollider místo něj");
+                        // Místo nastavení MeshCollider jako trigger, přidáme SphereCollider
+                        SphereCollider sphereCol = spawnedItem.AddComponent<SphereCollider>();
+                        sphereCol.isTrigger = true;
+                        sphereCol.radius = 0.5f;
+                        // MeshCollider necháme pro vizuální kolize (není trigger)
+                        meshCol.isTrigger = false;
+                    }
+                    else
+                    {
+                        // Jiný typ collideru (Box, Sphere, Capsule) - můžeme nastavit jako trigger
+                        existingCollider.isTrigger = true;
+                        Debug.Log($"  -> Existující {existingCollider.GetType().Name} nastaven jako trigger");
+                    }
+                }
+                
+                // Přidat ItemPickup komponentu
+                pickup = spawnedItem.GetComponent<ItemPickup>();
+                if (pickup == null)
+                {
+                    Debug.Log($"  -> Přidávám ItemPickup komponentu");
+                    pickup = spawnedItem.AddComponent<ItemPickup>();
+                }
+                
+                // Nastavit ItemData PŘED aktivací
+                pickup.SetItemData(selectedItem, 1);
+                Debug.Log($"  -> ItemData nastavena: {selectedItem.itemName}");
+                
+                // Zakázat/odstranit Rigidbody aby item nelétaly pryč
+                Rigidbody rb = spawnedItem.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    Debug.Log($"  -> Ničím Rigidbody aby item nelétaly");
+                    Destroy(rb);
+                }
+                
+                // AKTIVOVAT objekt - TEPRVE TEĎ se zavolá Start() a itemData už bude nastavená
+                spawnedItem.SetActive(true);
+                
+                // Obnovit původní stav prefabu
+                selectedItem.worldModelPrefab.SetActive(wasActive);
+            }
+            else
+            {
+                Debug.LogError($"Item {selectedItem.itemName} nemá worldModelPrefab ANI není nastaven itemPickupPrefab!");
+                continue;
+            }
+            
+            // Finální kontrola
+            if (spawnedItem != null)
+            {
+                Debug.Log($"✓ Item {selectedItem.itemName} úspěšně vytvořen na pozici {position}");
+                Debug.Log($"  Aktivní: {spawnedItem.activeSelf}, Enabled: {spawnedItem.activeInHierarchy}");
+                
+                if (pickup != null)
+                {
+                    Debug.Log($"  ItemPickup: {(pickup.enabled ? "ENABLED" : "DISABLED")}");
+                }
             }
         }
         
-        Debug.Log($"Treasure room {room.roomNumber} - spawned {itemsPerTreasureRoom} items");
+        Debug.Log($"=== SpawnItemsInRoom END - spawned {itemsPerTreasureRoom} items ===");
     }
     
     protected virtual void SpawnEnemiesInRoom(Room room, int count)
@@ -854,6 +1009,80 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         room.enemies.Add(boss);
         
         Debug.Log($"Boss spawnován v Boss Room na pozici {bossPosition}");
+        
+        // Spawn portálu (deaktivovaný)
+        SpawnPortalInBossRoom(room, boss);
+    }
+    
+    /// <summary>
+    /// Spawnuje deaktivovaný portál v boss místnosti
+    /// </summary>
+    protected virtual void SpawnPortalInBossRoom(Room room, GameObject boss)
+    {
+        if (epochPortalPrefab == null)
+        {
+            Debug.LogWarning("Epoch Portal prefab není nastaven! Portál nebude vytvořen.");
+            return;
+        }
+        
+        // Spawn portálu na konci boss místnosti (ve směru místnosti)
+        Vector3 direction = room.direction != Vector3.zero ? room.direction : Vector3.forward;
+        float distanceToEnd = room.calculatedSize / 2f - 10f; // 10m od kraje
+        Vector3 portalPosition = room.center + direction * distanceToEnd + new Vector3(0, portalOffset.y, 0);
+        
+        // Rotace portálu - má mířit zpět ke středu místnosti
+        Quaternion portalRotation = Quaternion.LookRotation(-direction);
+        
+        GameObject portal = Instantiate(epochPortalPrefab, portalPosition, portalRotation);
+        portal.name = "EpochPortal";
+        portal.transform.parent = room.floor.transform.parent;
+        
+        // Setup trigger collider (potřebný pro OnTriggerEnter)
+        Collider portalCollider = portal.GetComponent<Collider>();
+        if (portalCollider == null)
+        {
+            // Přidat sphere collider pokud žádný není
+            SphereCollider sphere = portal.AddComponent<SphereCollider>();
+            sphere.radius = 2f;
+            sphere.isTrigger = true;
+            Debug.Log("Portál: Přidán SphereCollider (trigger)");
+        }
+        else
+        {
+            // Nastavit existující collider jako trigger
+            portalCollider.isTrigger = true;
+            Debug.Log($"Portál: Nastaven {portalCollider.GetType().Name} jako trigger");
+        }
+        
+        // Přidat AudioSource pokud chybí
+        if (portal.GetComponent<AudioSource>() == null)
+        {
+            AudioSource audioSource = portal.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 1f;
+            Debug.Log("Portál: Přidán AudioSource");
+        }
+        
+        // Zkontrolovat jestli má EpochPortal komponent, jinak přidat
+        if (portal.GetComponent<EpochPortal>() == null)
+        {
+            Debug.LogWarning("Portál prefab nemá EpochPortal script, přidávám automaticky...");
+            portal.AddComponent<EpochPortal>();
+        }
+        
+        // DEAKTIVOVAT portál na začátku
+        portal.SetActive(false);
+        room.portal = portal;
+        
+        // Přidat BossPortalSpawner na bosse a propojit s portálem
+        BossPortalSpawner portalSpawner = boss.GetComponent<BossPortalSpawner>();
+        if (portalSpawner == null)
+        {
+            portalSpawner = boss.AddComponent<BossPortalSpawner>();
+        }
+        portalSpawner.SetPortal(portal);
+        
+        Debug.Log($"Portál vytvořen v Boss Room na pozici {portalPosition} (deaktivovaný)");
     }
     
     protected virtual void SpawnPlayer()

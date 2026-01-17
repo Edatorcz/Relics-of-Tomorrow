@@ -149,7 +149,6 @@ public abstract class EnemyBase : MonoBehaviour
             GameObject playerObj = allPlayers[0];
             player = playerObj.transform;
             playerTransform = player;
-            Debug.Log($"{gameObject.name}: Player found by tag: {player.name}");
             return;
         }
         
@@ -159,7 +158,6 @@ public abstract class EnemyBase : MonoBehaviour
         {
             player = playerByName.transform;
             playerTransform = player;
-            Debug.Log($"{gameObject.name}: Player found by name: {player.name}");
             return;
         }
         
@@ -169,11 +167,8 @@ public abstract class EnemyBase : MonoBehaviour
         {
             player = playerHealth.transform;
             playerTransform = player;
-            Debug.Log($"{gameObject.name}: Player found by PlayerHealth component: {player.name}");
             return;
         }
-        
-        Debug.LogWarning($"{gameObject.name}: Player not found! Make sure player has 'Player' tag or name.");
     }
     
     protected virtual void SetupNavMeshAgent()
@@ -233,20 +228,6 @@ public abstract class EnemyBase : MonoBehaviour
         
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         
-        // Debug každých 60 framů
-        if (Time.frameCount % 60 == 0)
-        {
-            Debug.Log($"{gameObject.name}: Player distance: {distanceToPlayer:F1}, Detection range: {detectionRange}, State: {currentState}");
-            Debug.Log($"{gameObject.name}: Tracking '{player.name}' at position: {player.position}, Enemy position: {transform.position}");
-            
-            // Kontrola, jestli je to správný hráč - pokud je moc daleko, najdi znovu
-            if (distanceToPlayer > 50f) // Pokud je player "podezřele" daleko
-            {
-                Debug.LogWarning($"{gameObject.name}: Player seems too far ({distanceToPlayer:F1}), searching for correct player...");
-                FindPlayer();
-            }
-        }
-        
         // Detekce hráče
         if (distanceToPlayer <= detectionRange && currentState != EnemyState.Chasing && currentState != EnemyState.Attacking)
         {
@@ -254,7 +235,6 @@ public abstract class EnemyBase : MonoBehaviour
             
             if (canSee)
             {
-                Debug.Log($"{gameObject.name}: Player detected! Switching to chase");
                 ChangeState(EnemyState.Chasing);
                 OnPlayerDetected?.Invoke(this);
             }
@@ -262,7 +242,6 @@ public abstract class EnemyBase : MonoBehaviour
         // Ztráta hráče
         else if (distanceToPlayer > loseTargetRange && (currentState == EnemyState.Chasing || currentState == EnemyState.Attacking))
         {
-            Debug.Log($"{gameObject.name}: Lost player, going idle");
             ChangeState(EnemyState.Idle);
             OnPlayerLost?.Invoke(this);
         }
@@ -331,7 +310,6 @@ public abstract class EnemyBase : MonoBehaviour
     
     protected virtual void EnterState(EnemyState state)
     {
-        Debug.Log($"{gameObject.name}: Entering state: {state}");
     }
     
     protected virtual void ExitState(EnemyState state)
@@ -353,24 +331,20 @@ public abstract class EnemyBase : MonoBehaviour
     // Damage systém
     public virtual void TakeDamage(float damageAmount)
     {
-        Debug.Log($"{gameObject.name}: TakeDamage called! Damage: {damageAmount}, Current HP: {currentHealth}, IsDead: {isDead}");
         
         if (isDead) 
         {
-            Debug.Log($"{gameObject.name}: Already dead, ignoring damage");
             return;
         }
         
         currentHealth -= damageAmount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
         
-        Debug.Log($"{gameObject.name}: After damage - HP: {currentHealth}/{maxHealth}");
         
         OnHealthChanged?.Invoke(this, currentHealth / maxHealth);
         
         if (currentHealth <= 0)
         {
-            Debug.Log($"{gameObject.name}: HP reached 0, calling Die()");
             Die();
         }
         else
@@ -408,7 +382,6 @@ public abstract class EnemyBase : MonoBehaviour
     
     protected virtual void RespawnEnemy()
     {
-        Debug.Log($"{gameObject.name}: Starting respawn...");
         
         // Resetovat stav
         isDead = false;
@@ -448,7 +421,6 @@ public abstract class EnemyBase : MonoBehaviour
         // Health bar
         OnHealthChanged?.Invoke(this, 1f);
         
-        Debug.Log($"{gameObject.name}: Respawn complete at {spawnPosition}");
     }
     
     private System.Collections.IEnumerator ReenableNavMeshAgent()
@@ -461,9 +433,7 @@ public abstract class EnemyBase : MonoBehaviour
             navMeshAgent.isStopped = false;
             navMeshAgent.velocity = Vector3.zero;
             navMeshAgent.ResetPath();
-            
-            Debug.Log($"{gameObject.name}: NavMeshAgent re-enabled, can move: {navMeshAgent.enabled}");
-        }
+     }
         
         // Reset do Idle stavu
         ChangeState(EnemyState.Idle);
