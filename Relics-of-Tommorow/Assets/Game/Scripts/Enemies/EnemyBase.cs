@@ -365,18 +365,35 @@ public abstract class EnemyBase : MonoBehaviour
     
     protected virtual void Die()
     {
+        if (isDead) return; // Zabránit dvojímu volání
+        
         isDead = true;
         ChangeState(EnemyState.Dead);
+        
+        // Změnit barvu na šedou
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null && renderer.material != null)
+        {
+            renderer.material.color = Color.gray;
+        }
         
         // Zakázat NavMeshAgent
         if (navMeshAgent != null)
         {
+            navMeshAgent.isStopped = true;
             navMeshAgent.enabled = false;
+        }
+        
+        // Zakázat collider
+        Collider collider = GetComponent<Collider>();
+        if (collider != null)
+        {
+            collider.enabled = false;
         }
         
         OnDeath?.Invoke(this);
         
-        // Zničit enemáka po 2 sekundách (místo respawnu)
+        // Zničit enemáka po 2 sekundách
         Destroy(gameObject, 2f);
     }
     

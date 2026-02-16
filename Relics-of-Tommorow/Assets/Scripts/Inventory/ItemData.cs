@@ -26,13 +26,21 @@ public class ItemData : ScriptableObject
     [Tooltip("Platí pouze pro ItemType.Weapon")]
     public WeaponStats weaponStats;
     
+    [Header("Artifact Settings")]
+    [Tooltip("Platí pouze pro ItemType.Artifact")]
+    public ArtifactData artifactData;  // Reference na artifact data
+    
+    [Tooltip("Doba držení pravého tlačítka pro aktivaci (v sekundách)")]
+    public float activationHoldTime = 1.5f;
+    
     public enum ItemType
     {
         Material,
         Weapon,
         Tool,
         Consumable,
-        Quest
+        Quest,
+        Artifact  // Artefakty - aktivovatelné power-upy
     }
 }
 

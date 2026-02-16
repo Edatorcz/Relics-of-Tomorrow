@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 /// <summary>
 /// Combat systém pro hráče - útok, blok
@@ -23,6 +24,9 @@ public class PlayerCombat : MonoBehaviour
     [Header("Attack Effects")]
     [SerializeField] private GameObject attackEffect;
     [SerializeField] private AudioClip attackSound;
+    
+    [Header("UI References")]
+    private HotbarUI hotbarUI;
     [SerializeField] private AudioSource audioSource;
     
     // Private variables
@@ -33,6 +37,12 @@ public class PlayerCombat : MonoBehaviour
     private Camera playerCamera;
     private PlayerHealth playerHealth;
     private PlayerMovement playerMovement;
+    
+    // Artifact modifiers
+    private float damageMultiplier = 1f;
+    private float attackSpeedMultiplier = 1f;
+    private float criticalChance = 0f;
+    private float lifeStealPercent = 0f;
     
     // Public properties
     public bool IsBlocking => isBlocking;
@@ -55,6 +65,9 @@ public class PlayerCombat : MonoBehaviour
         
         playerHealth = GetComponent<PlayerHealth>();
         playerMovement = GetComponent<PlayerMovement>();
+        
+        // Najít HotbarUI pro kontrolu vybraných itemů
+        hotbarUI = FindFirstObjectByType<HotbarUI>();
         
         if (audioSource == null)
         {
@@ -92,8 +105,16 @@ public class PlayerCombat : MonoBehaviour
     
     void HandleBlockInput()
     {
-        // RMB pro blok
-        if (Input.GetMouseButton(1) && currentBlockStamina > 0)
+        // Kontrola zda nemá hráč vybraný artefakt
+        bool hasArtifactSelected = false;
+        if (hotbarUI != null)
+        {
+            ItemData selectedItem = hotbarUI.GetSelectedItem();
+            hasArtifactSelected = selectedItem != null && selectedItem.itemType == ItemData.ItemType.Artifact;
+        }
+        
+        // RMB pro blok - ale jen pokud nemá vybraný artefakt
+        if (Input.GetMouseButton(1) && currentBlockStamina > 0 && !hasArtifactSelected)
         {
             if (!isBlocking)
             {
@@ -133,8 +154,9 @@ public class PlayerCombat : MonoBehaviour
     
     void TryAttack()
     {
-        // Cooldown check
-        if (Time.time - lastAttackTime < attackCooldown)
+        // Cooldown check s attack speed multiplierem
+        float effectiveCooldown = attackCooldown / attackSpeedMultiplier;
+        if (Time.time - lastAttackTime < effectiveCooldown)
             return;
         
         lastAttackTime = Time.time;
@@ -187,8 +209,32 @@ public class PlayerCombat : MonoBehaviour
                 
                 if (enemy != null)
                 {
-                    Debug.Log($"FOUND ENEMY: {enemy.gameObject.name}, calling TakeDamage({attackDamage})");
-                    enemy.TakeDamage(attackDamage);
+                    // Vypočítat finální damage s damage multiplierem a critical hilem
+                    float finalDamage = attackDamage * damageMultiplier;
+                    
+                    Debug.Log($"===== DAMAGE CALCULATION =====");
+                    Debug.Log($"Base attackDamage: {attackDamage}");
+                    Debug.Log($"Damage multiplier: {damageMultiplier}");
+                    Debug.Log($"Calculated damage: {attackDamage} * {damageMultiplier} = {finalDamage}");
+                    
+                    // Kontrola kritického zásahu
+                    if (criticalChance > 0 && UnityEngine.Random.value <= criticalChance)
+                    {
+                        finalDamage *= 2f; // Kritický hit = 2x damage
+                        Debug.Log($"CRITICAL HIT! Final damage: {finalDamage}");
+                    }
+                    Debug.Log($"==============================");
+                    
+                    Debug.Log($"FOUND ENEMY: {enemy.gameObject.name}, calling TakeDamage({finalDamage})");
+                    enemy.TakeDamage(finalDamage);
+                    
+                    // Life steal
+                    if (lifeStealPercent > 0 && playerHealth != null)
+                    {
+                        float healAmount = finalDamage * lifeStealPercent;
+                        playerHealth.Heal(healAmount);
+                        Debug.Log($"Life steal: Healed {healAmount} HP");
+                    }
                     
                     // Knockback
                     Rigidbody enemyRb = hit.collider.GetComponent<Rigidbody>();
@@ -296,6 +342,41 @@ public class PlayerCombat : MonoBehaviour
     public void SetAttackCooldown(float cooldown)
     {
         attackCooldown = cooldown;
+    }
+    
+    // Artifact system methods
+    public void ApplyDamageMultiplier(float multiplier)
+    {
+        float oldMultiplier = damageMultiplier;
+        damageMultiplier = multiplier;
+        Debug.Log($"PlayerCombat.ApplyDamageMultiplier: Changed from {oldMultiplier} to {damageMultiplier}");
+    }
+    
+    public void ApplyAttackSpeedMultiplier(float multiplier)
+    {
+        attackSpeedMultiplier = multiplier;
+        Debug.Log($"PlayerCombat: Attack speed multiplier set to {multiplier}");
+    }
+    
+    public void SetCriticalChance(float chance)
+    {
+        criticalChance = Mathf.Clamp01(chance);
+        Debug.Log($"PlayerCombat: Critical chance set to {criticalChance * 100}%");
+    }
+    
+    public void SetLifeSteal(float percent)
+    {
+        lifeStealPercent = Mathf.Clamp01(percent);
+        Debug.Log($"PlayerCombat: Life steal set to {lifeStealPercent * 100}%");
+    }
+    
+    public void ResetModifiers()
+    {
+        damageMultiplier = 1f;
+        attackSpeedMultiplier = 1f;
+        criticalChance = 0f;
+        lifeStealPercent = 0f;
+        Debug.Log("PlayerCombat: Modifiers reset");
     }
     
     // Debug vizualizace

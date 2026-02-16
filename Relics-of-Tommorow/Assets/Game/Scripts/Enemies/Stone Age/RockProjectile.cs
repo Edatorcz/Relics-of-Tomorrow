@@ -11,7 +11,7 @@ public class RockProjectile : EnemyProjectile
     [SerializeField] private float spinSpeed = 180f;
     
     private Vector3 randomSpinAxis;
-    private Rigidbody rb;
+    private new Rigidbody rb;
     
     void Start()
     {

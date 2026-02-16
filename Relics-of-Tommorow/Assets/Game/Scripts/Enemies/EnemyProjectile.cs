@@ -17,7 +17,7 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private TrailRenderer trail;
     
     private EnemyBase owner;
-    private Rigidbody rb;
+    protected Rigidbody rb;
     private bool hasHit = false;
     
     void Start()

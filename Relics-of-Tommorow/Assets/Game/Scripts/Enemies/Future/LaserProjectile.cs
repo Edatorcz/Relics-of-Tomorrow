@@ -15,8 +15,6 @@ public class LaserProjectile : EnemyProjectile
     [SerializeField] private TrailRenderer laserTrail;
     [SerializeField] private Light laserLight;
     
-    private Rigidbody rb;
-    
     void Start()
     {
         rb = GetComponent<Rigidbody>();

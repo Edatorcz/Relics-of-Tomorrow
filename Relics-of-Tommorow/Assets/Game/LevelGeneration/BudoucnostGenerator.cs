@@ -473,7 +473,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         shapeRenderer.material.SetColor("_EmissionColor", objColor * 2f);
         
         // Energetické částice kolem objektu
-        ParticleSystem ps = levObj.AddComponent<ParticleSystem>();
+        /*ParticleSystem ps = levObj.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 2f;
         main.startSpeed = 0.3f;
@@ -488,6 +488,16 @@ public class BudoucnostGenerator : RoomBasedGenerator
         var shape2 = ps.shape;
         shape2.shapeType = ParticleSystemShapeType.Sphere;
         shape2.radius = 0.5f;
+        
+        // Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
         
         // Bodové světlo
         GameObject lightObj = new GameObject("LevLight");
@@ -544,7 +554,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         
         Destroy(beam.GetComponent<Collider>());
         
-        // Částice dat proudící nahoru
+        /*// Částice dat proudící nahoru
         ParticleSystem ps = stream.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 3f;
@@ -562,11 +572,21 @@ public class BudoucnostGenerator : RoomBasedGenerator
         shape.radius = 0.05f;
         shape.angle = 0f;
         
+        // Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);
+        
         var renderer = ps.GetComponent<ParticleSystemRenderer>();
         renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
         renderer.material.color = streamColor;
         renderer.material.EnableKeyword("_EMISSION");
-        renderer.material.SetColor("_EmissionColor", streamColor * 2f);
+        renderer.material.SetColor("_EmissionColor", streamColor * 2f);*/
     }
     
     // ========== POKROČILÉ SCI-FI PRVKY ==========
@@ -699,6 +719,16 @@ public class BudoucnostGenerator : RoomBasedGenerator
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.5f;
+        
+        /*// Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
     }
     
     protected void CreateSecurityRobots(Room room, Transform parent, float roomSize)
@@ -926,7 +956,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         BoxCollider barrierCollider = shield.GetComponent<BoxCollider>();
         barrierCollider.isTrigger = true;
         
-        // Energetické částice
+        /*// Energetické částice
         ParticleSystem ps = shield.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 2f;
@@ -942,6 +972,16 @@ public class BudoucnostGenerator : RoomBasedGenerator
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Box;
         shape.scale = new Vector3(3f, 3f, 0.1f);
+        
+        // Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
     }
     
     protected void CreateTeleportPortals(Room room, Transform parent, float roomSize)
@@ -1040,7 +1080,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         pointLight.intensity = 6f;
         pointLight.range = 10f;
         
-        // Spirálové částice
+        /*// Spirálové částice
         ParticleSystem ps = portal.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 3f;
@@ -1061,8 +1101,12 @@ public class BudoucnostGenerator : RoomBasedGenerator
         var velocityOverLifetime = ps.velocityOverLifetime;
         velocityOverLifetime.enabled = true;
         velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
-        velocityOverLifetime.orbitalX = 2f;
-        velocityOverLifetime.orbitalY = 2f;
+        velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(0f);
+        velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(0f);
+        velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f);
+        velocityOverLifetime.orbitalX = new ParticleSystem.MinMaxCurve(2f);
+        velocityOverLifetime.orbitalY = new ParticleSystem.MinMaxCurve(2f);
+        velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
     }
     
     protected void CreateGravityPlatforms(Room room, Transform parent, float roomSize)
@@ -1158,7 +1202,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         }
         
         // Částice gravitačního pole
-        ParticleSystem ps = platform.AddComponent<ParticleSystem>();
+        /*ParticleSystem ps = platform.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 2f;
         main.startSpeed = new ParticleSystem.MinMaxCurve(-1f, 1f);
@@ -1175,6 +1219,16 @@ public class BudoucnostGenerator : RoomBasedGenerator
         shape.shapeType = ParticleSystemShapeType.Cone;
         shape.radius = 1f;
         shape.position = new Vector3(0, -0.5f, 0);
+        
+        // Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
     }
     
     protected void CreateLaserGrids(Room room, Transform parent, float roomSize)
@@ -1469,7 +1523,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
             Destroy(key.GetComponent<Collider>());
         }
         
-        // Datové částice z terminálu
+        /*// Datové částice z terminálu
         ParticleSystem ps = aiHolo.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 2f;
@@ -1485,6 +1539,16 @@ public class BudoucnostGenerator : RoomBasedGenerator
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.3f;
+        
+        // Velocity module (konstantní mód)
+        var velocity = ps.velocityOverLifetime;
+        velocity.enabled = false;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);*/
     }
 
     public override void GenerateLevel()
@@ -1567,7 +1631,7 @@ public class BudoucnostGenerator : RoomBasedGenerator
         epochParticles.transform.parent = transform;
         epochParticles.transform.position = Vector3.up * 2f;
         
-        ParticleSystem ps = epochParticles.AddComponent<ParticleSystem>();
+        /*ParticleSystem ps = epochParticles.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 8f;
         main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 1.2f);
@@ -1588,7 +1652,12 @@ public class BudoucnostGenerator : RoomBasedGenerator
         
         var velocity = ps.velocityOverLifetime;
         velocity.enabled = true;
+        velocity.x = new ParticleSystem.MinMaxCurve(0f);
         velocity.y = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f);
         
         var colorOverLifetime = ps.colorOverLifetime;
         colorOverLifetime.enabled = true;
@@ -1598,6 +1667,6 @@ public class BudoucnostGenerator : RoomBasedGenerator
         renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
         renderer.material.SetColor("_EmissionColor", new Color(0f, 2f, 2f));
         renderer.material.EnableKeyword("_EMISSION");
-        renderer.renderMode = ParticleSystemRenderMode.Billboard;
+        renderer.renderMode = ParticleSystemRenderMode.Billboard;*/
     }
 }

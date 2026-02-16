@@ -31,6 +31,10 @@ public class PlayerHealth : MonoBehaviour
     private bool isBlocking = false;
     private float blockDamageReduction = 0f;
     
+    // Artifact modifiers
+    private float defenseMultiplier = 1f;
+    private float regenMultiplier = 1f;
+    
     void Start()
     {
         Initialize();
@@ -65,7 +69,7 @@ public class PlayerHealth : MonoBehaviour
         // Regenerace začne až po určitém čase od posledního damage
         if (Time.time - lastDamageTime >= regenDelay)
         {
-            float regenAmount = regenRate * Time.deltaTime;
+            float regenAmount = regenRate * regenMultiplier * Time.deltaTime;
             Heal(regenAmount);
         }
     }
@@ -78,8 +82,10 @@ public class PlayerHealth : MonoBehaviour
         if (isBlocking)
         {
             damageAmount *= (1f - blockDamageReduction);
-            Debug.Log($"PlayerHealth: Blocked! Reduced damage to {damageAmount}");
         }
+        
+        // Aplikovat artifact defense multiplier
+        damageAmount /= defenseMultiplier;
         
         currentHealth -= damageAmount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
@@ -134,12 +140,29 @@ public class PlayerHealth : MonoBehaviour
         
         isDead = true;
         
-        Debug.Log("PlayerHealth: Player died!");
-        
         // Vyvolat event smrti (EpochManager se přihlásí k tomuto eventu)
-        OnPlayerDied?.Invoke();
+        if (OnPlayerDied != null)
+        {
+            OnPlayerDied.Invoke();
+        }
+        else
+        {
+            // Fallback - pokusit se najít EpochManager a zavolat přímo
+            StartCoroutine(TryFindEpochManager());
+        }
         
         // Zde můžete přidat další logiku smrti (death screen, efekty, atd.)
+    }
+    
+    private System.Collections.IEnumerator TryFindEpochManager()
+    {
+        yield return new WaitForSeconds(0.1f);
+        
+        EpochManager manager = FindFirstObjectByType<EpochManager>();
+        if (manager != null)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex + 1);
+        }
     }
     
     public void Respawn()
@@ -174,6 +197,36 @@ public class PlayerHealth : MonoBehaviour
         {
             invulnerabilityEndTime = Time.time + duration;
         }
+    }
+    
+    // Artifact system methods
+    public void IncreaseMaxHealth(float bonus)
+    {
+        float oldMax = maxHealth;
+        maxHealth += bonus;
+        // Zvýšit i current health proporcionálně
+        currentHealth += bonus;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        Debug.Log($"PlayerHealth: Max health increased by {bonus}. New max: {maxHealth}");
+    }
+    
+    public void ApplyDefenseMultiplier(float multiplier)
+    {
+        defenseMultiplier = multiplier;
+        Debug.Log($"PlayerHealth: Defense multiplier set to {multiplier}");
+    }
+    
+    public void ApplyRegenMultiplier(float multiplier)
+    {
+        regenMultiplier = multiplier;
+        Debug.Log($"PlayerHealth: Regen multiplier set to {multiplier}");
+    }
+    
+    public void ResetModifiers()
+    {
+        defenseMultiplier = 1f;
+        regenMultiplier = 1f;
+        Debug.Log("PlayerHealth: Modifiers reset");
     }
     
     // Debug visualization

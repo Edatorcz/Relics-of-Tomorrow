@@ -86,7 +86,12 @@ public class BossLootDropper : MonoBehaviour
             }
         }
         
-        if (weightedItems.Count == 0) return items[Random.Range(0, items.Count)];
+        // Pokud žádný item nemá spawnChance > 0, nedropuj nic!
+        if (weightedItems.Count == 0)
+        {
+            Debug.LogWarning("BossLootDropper: Žádný boss item nemá spawnChance > 0!");
+            return null;
+        }
         
         // Vypočítej celkovou váhu
         float totalWeight = weightedItems.Sum(x => x.weight);

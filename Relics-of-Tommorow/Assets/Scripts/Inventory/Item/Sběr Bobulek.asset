@@ -16,6 +16,17 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   worldModelPrefab: {fileID: 5314368053603983117, guid: 612ca9c54cd4c3042bdabbeafc2c34d4, type: 3}
-  maxStackSize: 64
-  isStackable: 1
-  itemType: 3
+  handPositionOffset: {x: 0.792094, y: -0.86572, z: 0.873465}
+  handRotationOffset: {x: -67.944, y: -2.678, z: 178.563}
+  maxStackSize: 1
+  isStackable: 0
+  itemType: 5
+  weaponStats:
+    damage: 10
+    range: 2
+    attackSpeed: 1
+    defenseValue: 0
+    spawnChance: 50
+    isBossLoot: 0
+  artifactData: {fileID: 11400000, guid: 8c481e6fb884b8b4b8878d50e986a31d, type: 2}
+  activationHoldTime: 1.5

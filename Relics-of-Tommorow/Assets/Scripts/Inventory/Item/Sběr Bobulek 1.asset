@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3377f50264a403247b5e647e8b2cc254, type: 3}
+  m_Name: "Sb\u011Br Bobulek 1"
+  m_EditorClassIdentifier: 
+  artifactName: "Sb\u011Br Bobulek"
+  description: ' '
+  icon: {fileID: 0}
+  worldModelPrefab: {fileID: 5314368053603983117, guid: 612ca9c54cd4c3042bdabbeafc2c34d4, type: 3}
+  epoch: 0
+  effectType: 3
+  effectValue: 20
+  secondaryEffectType: 1
+  secondaryEffectValue: 20
+  auraColor: {r: 0.14901961, g: 0.5137255, b: 0.37647063, a: 0.3}
+  activationParticles: {fileID: 0}
+  pickupSound: {fileID: 0}
+  activationSound: {fileID: 0}

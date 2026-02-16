@@ -749,10 +749,13 @@ public class StarovekGenerator : RoomBasedGenerator
         }
         
         // Nepřátelé
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (GameObject enemy in enemies)
+        EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        foreach (EnemyBase enemy in enemies)
         {
-            enemy.SendMessage("SetWeatherSpeedModifier", multiplier, SendMessageOptions.DontRequireReceiver);
+            if (enemy != null)
+            {
+                enemy.SendMessage("SetWeatherSpeedModifier", multiplier, SendMessageOptions.DontRequireReceiver);
+            }
         }
     }
     

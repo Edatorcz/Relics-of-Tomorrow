@@ -57,6 +57,9 @@ public class PlayerMovement : MonoBehaviour
     private PlayerHealth playerHealth;
     private PlayerCombat playerCombat;
     
+    // Artifact modifiers
+    private float speedMultiplier = 1f;
+    
     void Start()
     {
         SetupCharacterController();
@@ -210,10 +213,11 @@ public class PlayerMovement : MonoBehaviour
     // POHYB S GRAVITACÍ A SKOKEM
     void SimpleMove()
     {
-        // Určení rychlosti
+        // Určení rychlosti s artifact multiplierem
         float speed = walkSpeed;
         if (isRunning) speed = runSpeed;
         if (isCrouching) speed = crouchSpeed;
+        speed *= speedMultiplier; // Artifact boost
         
         // Horizontální pohyb - RELATIVNĚ KE KAMEŘE!
         Vector3 moveDirection = Vector3.zero;
@@ -450,5 +454,18 @@ public class PlayerMovement : MonoBehaviour
     public bool IsRolling()
     {
         return isRolling;
+    }
+    
+    // Artifact system methods
+    public void ApplySpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = multiplier;
+        Debug.Log($"PlayerMovement: Speed multiplier set to {multiplier}");
+    }
+    
+    public void ResetModifiers()
+    {
+        speedMultiplier = 1f;
+        Debug.Log("PlayerMovement: Modifiers reset");
     }
 }

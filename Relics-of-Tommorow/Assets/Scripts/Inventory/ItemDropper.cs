@@ -6,9 +6,6 @@ public class ItemDropper : MonoBehaviour
     
     [Header("Drop Settings")]
     [SerializeField] private GameObject itemPickupPrefab; // Prefab ItemPickup objektu
-    [SerializeField] private float dropForce = 5f;
-    [SerializeField] private float dropUpwardForce = 2f;
-    [SerializeField] private float dropDistance = 2f;
     [SerializeField] private float spawnHeightOffset = 0.5f; // Výška nad zemí
     
     void Awake()
@@ -44,9 +41,9 @@ public class ItemDropper : MonoBehaviour
             return;
         }
         
-        // Vytvoř pickup objekt na pozici (s Y offsetem)
-        Vector3 spawnPosition = dropPosition + dropDirection.normalized * dropDistance;
-        spawnPosition.y += spawnHeightOffset; // Posun nahoru aby nebyl v zemi
+        // Vytvoř pickup objekt přímo na pozici (na zemi)
+        Vector3 spawnPosition = dropPosition;
+        spawnPosition.y += spawnHeightOffset; // Malý offset aby nebyl v zemi
         GameObject droppedItem = Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
         
         // Nastav ItemData a množství
@@ -58,16 +55,46 @@ public class ItemDropper : MonoBehaviour
         }
         pickup.SetItemData(item, quantity);
         
-        // Přidej fyziku - vyhoď item směrem před hráče
+        // Ujisti se, že má správný collider
+        EnsureProperCollider(droppedItem);
+        
+        // Přidej Rigidbody, ale BEZ síly - prostě položit na zem
         Rigidbody rb = droppedItem.GetComponent<Rigidbody>();
         if (rb == null)
         {
             rb = droppedItem.AddComponent<Rigidbody>();
         }
         
-        Vector3 throwDirection = dropDirection.normalized + Vector3.up * 0.5f;
-        rb.AddForce(throwDirection * dropForce + Vector3.up * dropUpwardForce, ForceMode.Impulse);
-        rb.AddTorque(Random.insideUnitSphere * 2f, ForceMode.Impulse);
+        // Nastavení aby se choval normálně při pádu na zem
+        rb.mass = 1f;
+        rb.linearDamping = 1f;
+        rb.angularDamping = 1f;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        
+        // ŽÁDNÁ síla - prostě spadne na zem gravitací
+    }
+    
+    /// <summary>
+    /// Zajisti že item má správný collider (pro Rigidbody musí být convex)
+    /// </summary>
+    private void EnsureProperCollider(GameObject obj)
+    {
+        // Zkontroluj všechny MeshCollidery
+        MeshCollider[] meshColliders = obj.GetComponentsInChildren<MeshCollider>();
+        foreach (MeshCollider mc in meshColliders)
+        {
+            if (!mc.convex)
+            {
+                mc.convex = true; // Nastav na convex aby fungoval s Rigidbody
+            }
+        }
+        
+        // Pokud nemá žádný collider, přidej BoxCollider
+        if (obj.GetComponent<Collider>() == null)
+        {
+            BoxCollider box = obj.AddComponent<BoxCollider>();
+            // Automaticky nastaví bounds podle Mesh
+        }
     }
     
     public void DropItemFromPlayer(ItemData item, int quantity)

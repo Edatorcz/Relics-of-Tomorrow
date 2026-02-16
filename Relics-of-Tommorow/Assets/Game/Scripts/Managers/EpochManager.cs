@@ -119,10 +119,27 @@ public class EpochManager : MonoBehaviour
         // Počkat chvíli (ukázat smrt, přehrát animaci, atd.)
         yield return new WaitForSeconds(transitionDelay);
         
+        // VYČISTIT VŠECHNY ARTEFAKTY
+        if (ArtifactManager.Instance != null)
+        {
+            ArtifactManager.Instance.ClearAllArtifacts();
+            Debug.Log("EpochManager: Artefakty vyčištěny při přechodu epochy");
+        }
+        
+        // ZAVŘÍT INVENTÁŘ UI
+        InventoryUI inventoryUI = FindFirstObjectByType<InventoryUI>();
+        if (inventoryUI != null)
+        {
+            inventoryUI.CloseInventory();
+        }
+        
+        // RESETOVAT KURZOR
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        
         // SMAZAT INVENTÁŘ (hráč zemřel, přijde o věci)
         if (InventorySystem.Instance != null)
         {
-            Debug.Log("EpochManager: Mažu inventář (smrt hráče)...");
             InventorySystem.Instance.ClearInventory();
         }
         
@@ -130,7 +147,6 @@ public class EpochManager : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
-            Debug.Log("EpochManager: Ničím hráče...");
             Destroy(player);
         }
         

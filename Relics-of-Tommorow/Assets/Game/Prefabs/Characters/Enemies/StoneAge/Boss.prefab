@@ -149,14 +149,14 @@ MonoBehaviour:
   chargeCooldown: 8
   chargeDistance: 15
   isCharging: 0
-  rockPrefab: {fileID: 0}
+  rockPrefab: {fileID: 542851872420716050, guid: 6dd17ca88b4c9954bacba3b1d9ce81f2, type: 3}
   rockThrowCooldown: 3
   rocksPerVolley: 5
   rockDamage: 25
   spinAttackDuration: 3
   spinDamage: 30
   isSpinning: 0
-  minionPrefab: {fileID: 0}
+  minionPrefab: {fileID: 3700115422243891766, guid: bc924aefca21cf54e9a73901f59d0ee2, type: 3}
   minionsToSpawn: 3
   minionSpawnCooldown: 15
   groundPoundRadius: 8

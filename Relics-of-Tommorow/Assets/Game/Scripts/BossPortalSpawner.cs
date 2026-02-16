@@ -64,6 +64,13 @@ public class BossPortalSpawner : MonoBehaviour
         
         hasActivatedPortal = true;
         
+        // VYČISTIT VŠECHNY ARTEFAKTY (konec epochy)
+        if (ArtifactManager.Instance != null)
+        {
+            ArtifactManager.Instance.ClearAllArtifacts();
+            Debug.Log("BossPortalSpawner: Artefakty vyčištěny po poražení bosse");
+        }
+        
         // Aktivovat portál s delayem
         Invoke(nameof(ActivatePortal), activationDelay);
     }

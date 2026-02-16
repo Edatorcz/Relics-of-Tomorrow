@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 public class InventorySystem : MonoBehaviour
@@ -6,7 +7,7 @@ public class InventorySystem : MonoBehaviour
     public static InventorySystem Instance { get; private set; }
     
     [Header("Inventory Settings")]
-    [SerializeField] private int inventorySize = 36; // Jako Minecraft: 27 hlavní + 9 hotbar
+    [SerializeField] private int inventorySize = 9; // Jen hotbar (bez hlavního inventáře)
     
     [Header("Debug - Obsah inventáře")]
     [SerializeField] private List<string> debugInventoryContents = new List<string>();
@@ -21,18 +22,92 @@ public class InventorySystem : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Debug.Log("InventorySystem: První instance vytvořena, inicializuji inventář");
+            InitializeInventory();
         }
         else
         {
-            Destroy(gameObject);
-            return;
+            // Už existuje instance z předchozí scény
+            // Zkontroluj jestli jsme tento objekt nebo jiný
+            if (Instance != this)
+            {
+                Debug.Log("InventorySystem: Duplicitní instance detekována, ničím novou");
+                // Jsme duplicitní - znič tento nový
+                Destroy(gameObject);
+            }
+            else
+            {
+                Debug.Log("InventorySystem: Stejná instance po scene reload");
+            }
+        }
+    }
+    
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"InventorySystem.OnSceneLoaded: Scéna '{scene.name}' načtena. Aktuální počet itemů v inventáři: {GetItemCount()}");
+        
+        // Vyčistit všechny event subscribers (starý UI byl zničen)
+        OnInventoryChanged = null;
+        
+        // Najít InventoryUI - buď na tomto objektu nebo vytvořit nový
+        InventoryUI inventoryUI = GetComponent<InventoryUI>();
+        if (inventoryUI == null)
+        {
+            Debug.Log("InventorySystem.OnSceneLoaded: InventoryUI neexistuje, přidávám nový");
+            // Pokud neexistuje, přidej ho
+            inventoryUI = gameObject.AddComponent<InventoryUI>();
+        }
+        else
+        {
+            Debug.Log("InventorySystem.OnSceneLoaded: InventoryUI již existuje");
         }
         
-        InitializeInventory();
+        // Vynutit refresh UI referencí z nové scény
+        if (inventoryUI != null)
+        {
+            inventoryUI.RefreshUIReferences();
+        }
+        
+        Debug.Log($"InventorySystem.OnSceneLoaded: Dokončeno. Počet itemů po načtení: {GetItemCount()}");
+    }
+    
+    /// <summary>
+    /// Pomocná metoda pro debug - vrátí celkový počet itemů
+    /// </summary>
+    private int GetItemCount()
+    {
+        if (slots == null) return 0;
+        int count = 0;
+        foreach (var slot in slots)
+        {
+            if (!slot.IsEmpty())
+            {
+                count += slot.quantity;
+            }
+        }
+        return count;
     }
     
     private void InitializeInventory()
     {
+        // Pokud už slots existují, nemazat je!
+        if (slots != null && slots.Count > 0)
+        {
+            Debug.Log($"InventorySystem: Slots již existují ({slots.Count} slotů), nemazám je!");
+            return;
+        }
+        
+        Debug.Log($"InventorySystem: Vytvářím nové slots ({inventorySize})");
         slots = new List<InventorySlot>();
         for (int i = 0; i < inventorySize; i++)
         {
