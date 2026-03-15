@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6e608b79c78a9e46a5cdebe69873fe5, type: 3}
+  m_Name: ArtifactSoundManager
+  m_EditorClassIdentifier: 
+  artifactPickup: {fileID: 8300000, guid: 3056cacfe16192a43bbb3ce90f0964fb, type: 3}
+  artifactActivateGeneric: {fileID: 8300000, guid: abf01a9499beb3f41adbdcff74aa5a41, type: 3}
+  artifactDeactivate: {fileID: 8300000, guid: 251f2c632a6c8544282946355508cad8, type: 3}
+  damageBoostSound: {fileID: 8300000, guid: 56a7c417172481444b3039dbdf37e3c1, type: 3}
+  speedBoostSound: {fileID: 8300000, guid: 53dd126b05d096d43942694ad072e881, type: 3}
+  healBoostSound: {fileID: 8300000, guid: 0260fe5dda3e8854891e4ada2ae0dc65, type: 3}
+  defenseBoostSound: {fileID: 8300000, guid: 260459bfd1f8d5d4482b40bebad716ee, type: 3}
+  attackSpeedBoostSound: {fileID: 0}
+  staminaBoostSound: {fileID: 0}
+  criticalChanceSound: {fileID: 0}
+  lifeStealSound: {fileID: 0}
+  regenBoostSound: {fileID: 0}

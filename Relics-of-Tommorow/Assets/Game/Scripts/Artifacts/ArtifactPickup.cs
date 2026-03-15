@@ -175,10 +175,21 @@ public class ArtifactPickup : MonoBehaviour
     
     void PlayPickupEffects()
     {
-        // Zvuk
-        if (itemData.artifactData != null && itemData.artifactData.pickupSound != null && audioSource != null)
+        // Zvuk - buď vlastní z artifact data, nebo obecný z sound manageru
+        AudioClip pickupSound = null;
+        
+        if (itemData.artifactData != null && itemData.artifactData.pickupSound != null)
         {
-            audioSource.PlayOneShot(itemData.artifactData.pickupSound);
+            pickupSound = itemData.artifactData.pickupSound;
+        }
+        else if (ArtifactSoundManager.Instance != null)
+        {
+            pickupSound = ArtifactSoundManager.Instance.artifactPickup;
+        }
+        
+        if (pickupSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(pickupSound);
         }
         
         // Particle burst

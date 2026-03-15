@@ -60,6 +60,14 @@ public class PlayerCamera : MonoBehaviour
             }
         }
         
+        // Ujistit se, že máme AudioListener - KRITICKÉ!
+        AudioListener listener = GetComponent<AudioListener>();
+        if (listener == null)
+        {
+            listener = gameObject.AddComponent<AudioListener>();
+            Debug.Log("PlayerCamera: AudioListener byl přidán!");
+        }
+        
         // Nastavení výchozí pozice kamery
         targetCameraHeight = standingCameraHeight;
         transform.localPosition = new Vector3(0, targetCameraHeight, 0);
@@ -75,8 +83,9 @@ public class PlayerCamera : MonoBehaviour
         HandleMouseLook();
         HandleCrouchCamera();
         
-        // ESC pro odemknutí kurzoru (pro testování)
-        if (Input.GetKeyDown(KeyCode.Escape))
+        // ESC pro odemknutí kurzoru - pouze pokud neexistuje PauseMenuManager
+        // (PauseMenuManager má prioritu)
+        if (Input.GetKeyDown(KeyCode.Escape) && FindFirstObjectByType<PauseMenuManager>() == null)
         {
             ToggleCursorLock();
         }

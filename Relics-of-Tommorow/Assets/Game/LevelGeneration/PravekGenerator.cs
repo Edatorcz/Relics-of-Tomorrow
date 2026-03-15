@@ -315,7 +315,6 @@ public class PravekGenerator : RoomBasedGenerator
         
         // Pochodně/ohně po obvodu místnosti
         CreateTorches(room, parent);
-        CreateTorches(room, parent);
         
         // Stalaktity (visí ze stropu)
         int stalactitesForRoom = Random.Range(stalactiteCount / 2, stalactiteCount);
@@ -535,16 +534,21 @@ public class PravekGenerator : RoomBasedGenerator
         float roomSize = room.calculatedSize > 0 ? room.calculatedSize : baseRoomSize;
         float halfSize = roomSize / 2f;
         
+        // Stěny jsou sphere primitiva umístěné na prstenci s poloměrem halfSize,
+        // přičemž jejich scale je 4-6 jednotek. Vnitřní povrch stěn je tedy přibližně
+        // na halfSize - 2.5f od středu – pochodně umístíme přesně tam.
+        float torchRadius = halfSize - 2.5f;
+        
         for (int i = 0; i < torchesPerRoom; i++)
         {
-            // Pozice přímo na stěně
-            float angle = (360f / torchesPerRoom) * i + Random.Range(-15f, 15f);
-            float distance = halfSize - 0.3f; // Blíž ke stěně
+            // Rozdělit pochodně rovnoměrně po obvodu místnosti
+            float angle = (360f / torchesPerRoom) * i + Random.Range(-10f, 10f);
+            float rad = angle * Mathf.Deg2Rad;
             
             Vector3 position = room.center + new Vector3(
-                Mathf.Cos(angle * Mathf.Deg2Rad) * distance,
-                Random.Range(1.5f, 2.5f), // Výš na stěně
-                Mathf.Sin(angle * Mathf.Deg2Rad) * distance
+                Mathf.Cos(rad) * torchRadius,
+                Random.Range(1.5f, 2.5f), // Výška na stěně
+                Mathf.Sin(rad) * torchRadius
             );
             
             // KONTROLA: Neklást pochodeň tam, kde je průchod do jiné místnosti

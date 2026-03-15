@@ -77,9 +77,9 @@ public class ArtifactData : ScriptableObject
     public GameObject activationParticles;
     
     [Header("Audio")]
-    [Tooltip("Zvuk při sebrání artefaktu")]
+    [Tooltip("Vlastní zvuk při sebrání (volitelný - pokud není nastaven, použije se zvuk z ArtifactSoundManager)")]
     public AudioClip pickupSound;
     
-    [Tooltip("Zvuk při aktivaci efektu")]
+    [Tooltip("Vlastní zvuk při aktivaci (volitelný - pokud není nastaven, použije se zvuk z ArtifactSoundManager)")]
     public AudioClip activationSound;
 }

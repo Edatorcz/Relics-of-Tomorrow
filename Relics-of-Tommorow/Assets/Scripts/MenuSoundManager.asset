@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29235104a8acf7e4c8ac64bdc7587aa7, type: 3}
+  m_Name: MenuSoundManager
+  m_EditorClassIdentifier: 
+  buttonClick: {fileID: 8300000, guid: 49e95b991814ec04ba9e9f54d700d401, type: 3}
+  buttonHover: {fileID: 8300000, guid: e7076172a801f094a9526e24b897c5db, type: 3}
+  menuOpen: {fileID: 8300000, guid: 5bc7abb7927d5f6418fd8382b10e969f, type: 3}
+  menuClose: {fileID: 8300000, guid: 9e7081672039cee4aa4dc672f817abba, type: 3}
+  sliderMove: {fileID: 8300000, guid: cd2891e2751108b44b877f333526fd7c, type: 3}
+  confirmSound: {fileID: 8300000, guid: d92046716160f1a4aa2a294ef1f488c0, type: 3}
+  errorSound: {fileID: 8300000, guid: 7280604b251e01440a4cd5f076267367, type: 3}
+  warningSound: {fileID: 8300000, guid: 96ff832d1f95acf468676d2107e44c80, type: 3}
+  mainMenuMusic: {fileID: 8300000, guid: 98ed3259840fd4e4280193923f1693d8, type: 3}
+  pauseMenuMusic: {fileID: 0}
+  gameOverSound: {fileID: 0}
+  victorySound: {fileID: 0}
+  uiVolume: 0.7
+  musicVolume: 0.5

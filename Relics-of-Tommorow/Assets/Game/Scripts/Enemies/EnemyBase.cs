@@ -28,6 +28,7 @@ public abstract class EnemyBase : MonoBehaviour
     [Header("Components")]
     [SerializeField] protected NavMeshAgent navMeshAgent;
     [SerializeField] protected Animator animator;
+    [SerializeField] protected AudioSource audioSource;
     
     // Protected proměnné
     protected Transform player;
@@ -106,6 +107,20 @@ public abstract class EnemyBase : MonoBehaviour
         if (animator == null)
         {
             animator = GetComponent<Animator>();
+        }
+        
+        // AudioSource - pro zvuky nepřátel
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 1f; // 3D spatial sound pro nepřátele
+                audioSource.minDistance = 3f;
+                audioSource.maxDistance = 20f;
+            }
         }
         
         // Collider - DŮLEŽITÉ pro PlayerCombat raycast!

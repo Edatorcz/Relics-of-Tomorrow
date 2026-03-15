@@ -9,11 +9,32 @@ public class PlayerHealth : MonoBehaviour
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float currentHealth;
+    
+    [Header("Audio")]
+    [Tooltip("Volitelné - automaticky se najde PlayerSoundManager.Instance pokud není přiřazeno")]
+    [SerializeField] private PlayerSoundManager soundManager;
+    [SerializeField] private AudioSource audioSource;
+    
+    [Header("UI")]
+    [Tooltip("Zapnout starý OnGUI health bar (debug) - vypni pro použití PlayerHealthBarUI")]
+    [SerializeField] private bool useDebugOnGUIBar = false;
+    
+    private PlayerSoundManager SoundManager
+    {
+        get
+        {
+            if (soundManager == null)
+            {
+                soundManager = PlayerSoundManager.Instance;
+            }
+            return soundManager;
+        }
+    }
     [SerializeField] private bool isInvulnerable = false;
     [SerializeField] private float invulnerabilityDuration = 1f;
     
     [Header("Regeneration")]
-    [SerializeField] private bool enableHealthRegen = true;
+    [SerializeField] private bool enableHealthRegen = false;
     [SerializeField] private float regenRate = 5f; // HP per second
     [SerializeField] private float regenDelay = 3f; // Delay after taking damage
     
@@ -44,6 +65,18 @@ public class PlayerHealth : MonoBehaviour
     {
         currentHealth = maxHealth;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        
+        // Inicializovat AudioSource
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f; // 2D sound
+            }
+        }
         
         Debug.Log("PlayerHealth: Initialized");
     }
@@ -92,6 +125,16 @@ public class PlayerHealth : MonoBehaviour
         
         lastDamageTime = Time.time;
         
+        // Přehrát zvuk poškození
+        if (SoundManager != null && audioSource != null)
+        {
+            AudioClip hurtSound = SoundManager.GetRandomHurt();
+            if (hurtSound != null)
+            {
+                audioSource.PlayOneShot(hurtSound, SoundManager.damageVolume);
+            }
+        }
+        
         // Aktivovat invulnerability
         if (invulnerabilityDuration > 0)
         {
@@ -117,6 +160,12 @@ public class PlayerHealth : MonoBehaviour
         currentHealth += healAmount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
         
+        // Přehrát zvuk léčení (pouze pokud heal přijde z externího zdroje, ne z regenerace)
+        if (healAmount > regenRate && SoundManager != null && audioSource != null && SoundManager.heal != null)
+        {
+            audioSource.PlayOneShot(SoundManager.heal, SoundManager.damageVolume);
+        }
+        
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         
         //Debug.Log($"PlayerHealth: Healed {healAmount}. Health: {currentHealth}/{maxHealth}");
@@ -139,6 +188,18 @@ public class PlayerHealth : MonoBehaviour
         if (isDead) return;
         
         isDead = true;
+        
+        // Zaznamenat smrt do statistik
+        if (GameStatistics.Instance != null)
+        {
+            GameStatistics.Instance.RecordDeath();
+        }
+        
+        // Přehrát zvuk smrti
+        if (SoundManager != null && audioSource != null && SoundManager.death != null)
+        {
+            audioSource.PlayOneShot(SoundManager.death, SoundManager.damageVolume);
+        }
         
         // Vyvolat event smrti (EpochManager se přihlásí k tomuto eventu)
         if (OnPlayerDied != null)
@@ -229,10 +290,10 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log("PlayerHealth: Modifiers reset");
     }
     
-    // Debug visualization
+    // Debug visualization - použij místo toho PlayerHealthBarUI!
     void OnGUI()
     {
-        if (!Application.isPlaying) return;
+        if (!Application.isPlaying || !useDebugOnGUIBar) return;
         
         // Jednoduchý health bar
         float barWidth = 200f;

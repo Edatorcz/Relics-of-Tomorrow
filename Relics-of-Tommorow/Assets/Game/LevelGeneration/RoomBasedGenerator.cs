@@ -888,6 +888,33 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         return enemyPrefabs[Random.Range(0, Mathf.Min(enemyPrefabs.Length, roomNumber))];
     }
     
+    /// <summary>
+    /// Zjistí, zda je pozice v zóně chodby (průchodu do jiné místnosti), kde nesmí být dekorace.
+    /// </summary>
+    protected virtual bool IsInCorridorZone(Vector3 pos, Room room)
+    {
+        float roomSize = room.calculatedSize > 0 ? room.calculatedSize : baseRoomSize;
+        float halfSize = roomSize / 2f;
+        // Šířka zakázané zóny kolem osy chodby (corridorWidth + bezpečnostní okraj)
+        float zoneHalfWidth = corridorWidth * 0.5f + 2.5f;
+
+        foreach (Room connected in room.connectedRooms)
+        {
+            Vector3 corridorDir = (connected.center - room.center).normalized;
+            Vector3 relPos = new Vector3(pos.x - room.center.x, 0f, pos.z - room.center.z);
+
+            // Složka kolmá na osu chodby
+            float along = Vector3.Dot(relPos, corridorDir);
+            Vector3 perpVec = relPos - corridorDir * along;
+            float perp = perpVec.magnitude;
+
+            // Zóna platí od středu místnosti až za stěnu (tedy along > 0)
+            if (along > 0f && perp < zoneHalfWidth)
+                return true;
+        }
+        return false;
+    }
+
     protected virtual void SpawnDecorationsInRoom(Room room)
     {
         // Sloučit všechny typy dekorací
@@ -909,22 +936,60 @@ public abstract class RoomBasedGenerator : MonoBehaviour
         
         // Zvýšený počet dekorací pro větší hustotu (3-5x více)
         int totalDecorations = decorationsPerRoom * Random.Range(3, 6);
-        
+
+        // Sledovat umístěné pozice pro kontrolu překryvu
+        List<Vector3> placedPositions = new List<Vector3>();
+
         for (int i = 0; i < totalDecorations; i++)
         {
-            Vector3 position = GetRandomPositionInRoom(room);
             GameObject prefab = allDecorations[Random.Range(0, allDecorations.Count)];
-            
-            if (prefab != null)
+            if (prefab == null) continue;
+
+            // Minimální vzdálenost závisí na typu dekorace
+            bool isTree = treePrefabs != null && System.Array.Exists(treePrefabs, t => t == prefab);
+            float minDist = isTree ? 4.5f : 2.0f;
+
+            // Zkus najít platnou pozici (max 15 pokusů)
+            Vector3 position = Vector3.zero;
+            bool found = false;
+            for (int attempt = 0; attempt < 15; attempt++)
             {
-                GameObject decoration = Instantiate(prefab, position, Quaternion.Euler(0, Random.Range(0f, 360f), 0), decorationParent.transform);
-                
-                // Nastavit velikost podle typu dekorace
-                float scale = GetDecorationScale(prefab);
-                decoration.transform.localScale = Vector3.one * scale;
-                
-                room.decorations.Add(decoration);
+                Vector3 candidate = GetRandomPositionInRoom(room);
+
+                // Odmítnout pozice v zóně chodbičky
+                if (IsInCorridorZone(candidate, room)) continue;
+
+                // Odmítnout pokud je příliš blízko jiné dekorace
+                bool tooClose = false;
+                foreach (Vector3 placed in placedPositions)
+                {
+                    if (Vector3.Distance(
+                            new Vector3(candidate.x, 0f, candidate.z),
+                            new Vector3(placed.x, 0f, placed.z)) < minDist)
+                    {
+                        tooClose = true;
+                        break;
+                    }
+                }
+
+                if (!tooClose)
+                {
+                    position = candidate;
+                    found = true;
+                    break;
+                }
             }
+
+            if (!found) continue; // Nestihli jsme najít vhodné místo - přeskočit
+
+            placedPositions.Add(position);
+            GameObject decoration = Instantiate(prefab, position, Quaternion.Euler(0, Random.Range(0f, 360f), 0), decorationParent.transform);
+
+            // Nastavit velikost podle typu dekorace
+            float scale = GetDecorationScale(prefab);
+            decoration.transform.localScale = Vector3.one * scale;
+
+            room.decorations.Add(decoration);
         }
         
         // Přidat taktické platformy/vývytáky pro ranged enemáky (NA ZEMI, ne ve vzduchu)
@@ -935,9 +1000,17 @@ public abstract class RoomBasedGenerator : MonoBehaviour
             int platformCount = Random.Range(2, 5);
             for (int i = 0; i < platformCount; i++)
             {
-                Vector3 position = GetRandomPositionInRoom(room);
-                position.y = 0f; // NA ZEMI, ne ve vzduchu!
-                GameObject platform = Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], position, Quaternion.identity, decorationParent.transform);
+                Vector3 candidate = Vector3.zero;
+                bool found = false;
+                for (int attempt = 0; attempt < 10; attempt++)
+                {
+                    Vector3 pos = GetRandomPositionInRoom(room);
+                    pos.y = 0f;
+                    if (!IsInCorridorZone(pos, room)) { candidate = pos; found = true; break; }
+                }
+                if (!found) continue;
+
+                GameObject platform = Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], candidate, Quaternion.identity, decorationParent.transform);
                 platform.name = "TacticalPlatform";
                 platform.transform.localScale = Vector3.one * Random.Range(2f, 3.5f); // Větší platforma
             }

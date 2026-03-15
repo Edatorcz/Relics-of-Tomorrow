@@ -22,6 +22,23 @@ public class ArtifactManager : MonoBehaviour
     [SerializeField] private GameObject auraEffectPrefab;
     private GameObject currentAura;
     
+    [Header("Audio")]
+    [Tooltip("Volitelné - automaticky se najde ArtifactSoundManager.Instance pokud není přiřazeno")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private ArtifactSoundManager soundManager;
+    
+    private ArtifactSoundManager SoundManager
+    {
+        get
+        {
+            if (soundManager == null)
+            {
+                soundManager = ArtifactSoundManager.Instance;
+            }
+            return soundManager;
+        }
+    }
+    
     // Modifikátory pro různé statistiky
     private float damageMultiplier = 1f;
     private float healthBonus = 0f;
@@ -56,6 +73,21 @@ public class ArtifactManager : MonoBehaviour
     {
         FindPlayerReferences();
         SubscribeToEvents();
+        InitializeAudioSource();
+    }
+    
+    /// <summary>
+    /// Inicializuje AudioSource pokud neexistuje
+    /// </summary>
+    private void InitializeAudioSource()
+    {
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f; // 2D sound
+            audioSource.volume = 0.7f;
+        }
     }
     
     void OnDestroy()
@@ -175,6 +207,12 @@ public class ArtifactManager : MonoBehaviour
         
         // Přepočítat všechny efekty
         RecalculateAllEffects();
+        
+        // Přehrát deaktivační zvuk
+        if (SoundManager != null && SoundManager.artifactDeactivate != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(SoundManager.artifactDeactivate);
+        }
         
         // Event
         OnArtifactDeactivated?.Invoke(artifact);
@@ -370,10 +408,31 @@ public class ArtifactManager : MonoBehaviour
     /// </summary>
     private void PlayActivationEffects(ArtifactData artifact)
     {
-        // TODO: Přehrát zvuk a particle efekty
+        // Vybrat správný zvuk - buď vlastní z artifact data, nebo z sound manageru
+        AudioClip soundToPlay = null;
+        
+        // Nejprve zkusit vlastní zvuk artefaktu
         if (artifact.activationSound != null)
         {
-            // AudioSource.PlayClipAtPoint(artifact.activationSound, playerHealth.transform.position);
+            soundToPlay = artifact.activationSound;
+        }
+        // Jinak použít zvuk z sound manageru podle typu efektu
+        else if (SoundManager != null)
+        {
+            soundToPlay = SoundManager.GetSoundForEffect(artifact.effectType);
+        }
+        
+        if (soundToPlay != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(soundToPlay);
+            Debug.Log($"ArtifactManager: Přehrávám zvuk aktivace pro {artifact.artifactName}");
+        }
+        
+        // Particle efekty
+        if (artifact.activationParticles != null && playerHealth != null)
+        {
+            GameObject particles = Instantiate(artifact.activationParticles, playerHealth.transform.position, Quaternion.identity);
+            Destroy(particles, 3f);
         }
     }
     

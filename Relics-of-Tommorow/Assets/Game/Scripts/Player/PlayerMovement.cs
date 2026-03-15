@@ -40,6 +40,23 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool freezeOnStart = true; // Zmrazit hráče na začátku
     private bool isFrozen = false;
     
+    [Header("Audio")]
+    [Tooltip("Volitelné - automaticky se najde PlayerSoundManager.Instance pokud není přiřazeno")]
+    [SerializeField] private PlayerSoundManager soundManager;
+    [SerializeField] private AudioSource audioSource;
+    
+    private PlayerSoundManager SoundManager
+    {
+        get
+        {
+            if (soundManager == null)
+            {
+                soundManager = PlayerSoundManager.Instance;
+            }
+            return soundManager;
+        }
+    }
+    
     private Vector3 movement;
     private float currentSpeed;
     private bool isRunning;
@@ -74,6 +91,18 @@ public class PlayerMovement : MonoBehaviour
         // Získání reference na PlayerHealth a PlayerCombat
         playerHealth = GetComponent<PlayerHealth>();
         playerCombat = GetComponent<PlayerCombat>();
+        
+        // Inicializovat AudioSource - nebo použít existující
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f; // 2D sound
+            }
+        }
         
         // Freeze hráče na začátku pokud je to zapnuté
         if (freezeOnStart)
@@ -389,6 +418,12 @@ public class PlayerMovement : MonoBehaviour
         isRolling = true;
         rollTimer = rollDuration;
         lastRollTime = Time.time;
+        
+        // Přehrát zvuk dashe/rollu
+        if (SoundManager != null && audioSource != null && SoundManager.dash != null)
+        {
+            audioSource.PlayOneShot(SoundManager.dash, SoundManager.footstepVolume);
+        }
         
         // Snížit výšku během rollu (crouch)
         if (characterController != null)

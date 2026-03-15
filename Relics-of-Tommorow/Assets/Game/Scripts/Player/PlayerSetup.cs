@@ -72,6 +72,10 @@ public class PlayerSetup : MonoBehaviour
         camera.nearClipPlane = 0.1f;
         camera.farClipPlane = 1000f;
         
+        // Přidat AudioListener - KRITICKÉ pro slyšení zvuků!
+        AudioListener audioListener = cameraObject.AddComponent<AudioListener>();
+        Debug.Log("PlayerSetup: AudioListener added to camera");
+        
         // Přidat PlayerCamera script
         PlayerCamera playerCamera = cameraObject.AddComponent<PlayerCamera>();
         

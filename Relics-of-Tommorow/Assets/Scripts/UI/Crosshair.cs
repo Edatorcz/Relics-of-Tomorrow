@@ -50,6 +50,16 @@ public class Crosshair : MonoBehaviour
             return;
         }
         
+        // Nastavit anchor tohoto objektu na střed obrazovky
+        RectTransform myRect = GetComponent<RectTransform>();
+        if (myRect != null)
+        {
+            myRect.anchorMin = new Vector2(0.5f, 0.5f);
+            myRect.anchorMax = new Vector2(0.5f, 0.5f);
+            myRect.pivot = new Vector2(0.5f, 0.5f);
+            myRect.anchoredPosition = Vector2.zero;
+        }
+        
         // Vyčisti staré části
         foreach (Transform child in transform)
         {
@@ -107,9 +117,13 @@ public class Crosshair : MonoBehaviour
         crosshairImages = new Image[1];
         
         GameObject circleObj = new GameObject("Circle");
-        circleObj.transform.SetParent(transform);
+        circleObj.transform.SetParent(transform, false);
         
         RectTransform rect = circleObj.AddComponent<RectTransform>();
+        // Anchor na střed
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = Vector2.zero;
         rect.sizeDelta = new Vector2(crosshairSize, crosshairSize);
         
@@ -128,9 +142,13 @@ public class Crosshair : MonoBehaviour
     private RectTransform CreateLine(string name, Vector2 size, Vector2 position)
     {
         GameObject lineObj = new GameObject(name);
-        lineObj.transform.SetParent(transform);
+        lineObj.transform.SetParent(transform, false);
         
         RectTransform rect = lineObj.AddComponent<RectTransform>();
+        // Anchor na střed rodiče
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
         

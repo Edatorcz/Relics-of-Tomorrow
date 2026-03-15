@@ -25,6 +25,22 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] private GameObject attackEffect;
     [SerializeField] private AudioClip attackSound;
     
+    [Header("Audio")]
+    [Tooltip("Volitelné - automaticky se najde PlayerSoundManager.Instance pokud není přiřazeno")]
+    [SerializeField] private PlayerSoundManager soundManager;
+    
+    private PlayerSoundManager SoundManager
+    {
+        get
+        {
+            if (soundManager == null)
+            {
+                soundManager = PlayerSoundManager.Instance;
+            }
+            return soundManager;
+        }
+    }
+    
     [Header("UI References")]
     private HotbarUI hotbarUI;
     [SerializeField] private AudioSource audioSource;
@@ -72,7 +88,12 @@ public class PlayerCombat : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
-            if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f; // 2D sound
+            }
         }
         
         // Nastavit enemy layer pokud není nastaveno
@@ -166,6 +187,16 @@ public class PlayerCombat : MonoBehaviour
     
     void PerformAttack()
     {
+        // Přehrát zvuk švihu zbraně
+        if (SoundManager != null && audioSource != null)
+        {
+            AudioClip swingSound = SoundManager.GetRandomAttackSwing();
+            if (swingSound != null)
+            {
+                audioSource.PlayOneShot(swingSound, SoundManager.combatVolume);
+            }
+        }
+        
         // Raycast z kamery
         if (playerCamera != null)
         {
@@ -227,6 +258,12 @@ public class PlayerCombat : MonoBehaviour
                     
                     Debug.Log($"FOUND ENEMY: {enemy.gameObject.name}, calling TakeDamage({finalDamage})");
                     enemy.TakeDamage(finalDamage);
+                    
+                    // Přehrát zvuk zásahu
+                    if (SoundManager != null && audioSource != null && SoundManager.attackHit != null)
+                    {
+                        audioSource.PlayOneShot(SoundManager.attackHit, SoundManager.combatVolume);
+                    }
                     
                     // Life steal
                     if (lifeStealPercent > 0 && playerHealth != null)

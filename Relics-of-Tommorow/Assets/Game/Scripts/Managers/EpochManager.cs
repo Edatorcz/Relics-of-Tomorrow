@@ -33,6 +33,12 @@ public class EpochManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject); // Přetrvá mezi scénami
+            
+            // Načíst uloženou hlasitost z PlayerPrefs
+            float savedVolume = PlayerPrefs.GetFloat("masterVolume", 1.0f);
+            if (savedVolume <= 0f) savedVolume = 1.0f;
+            AudioListener.volume = savedVolume;
+            Debug.Log($"EpochManager: Hlasitost načtena = {savedVolume}");
         }
         else
         {
@@ -64,6 +70,7 @@ public class EpochManager : MonoBehaviour
     {
         DetectCurrentEpoch();
         SubscribeToPlayerDeath();
+        RecordEpochVisit();
     }
     
     /// <summary>
@@ -84,6 +91,21 @@ public class EpochManager : MonoBehaviour
         }
         
         Debug.Log($"EpochManager: Scéna '{currentScene}' není epocha");
+    }
+    
+    /// <summary>
+    /// Zaznamenat návštěvu aktuální epochy
+    /// </summary>
+    private void RecordEpochVisit()
+    {
+        if (currentEpochIndex < 0 || currentEpochIndex >= epochScenes.Length)
+            return;
+            
+        if (GameStatistics.Instance != null)
+        {
+            string epochName = epochScenes[currentEpochIndex];
+            GameStatistics.Instance.RecordEpochVisit(epochName);
+        }
     }
     
     /// <summary>
@@ -194,8 +216,24 @@ public class EpochManager : MonoBehaviour
         if (index >= 0 && index < epochScenes.Length)
         {
             currentEpochIndex = index;
+            
+            // Pokud se vracíme zpět do Pravěku, počítá se to jako nová hra
+            if (index == 0 && GameStatistics.Instance != null)
+            {
+                GameStatistics.Instance.RecordNewGame();
+            }
+            
             SceneManager.LoadScene(epochScenes[index]);
         }
+    }
+    
+    /// <summary>
+    /// Reset stavu pro novou hru (volá se při Quit to Menu)
+    /// </summary>
+    public void ResetForNewGame()
+    {
+        currentEpochIndex = -1;
+        Debug.Log("EpochManager: Reset pro novou hru");
     }
     
     /// <summary>

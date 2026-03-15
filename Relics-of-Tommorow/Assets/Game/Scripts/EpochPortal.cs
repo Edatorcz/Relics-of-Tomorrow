@@ -15,8 +15,25 @@ public class EpochPortal : MonoBehaviour
     [SerializeField] private ParticleSystem portalParticles; // Efekt portálu
     [SerializeField] private Light portalLight; // Světlo portálu
     [SerializeField] private Color portalColor = new Color(0.2f, 0.5f, 1f); // Modrá barva
-    [SerializeField] private AudioClip portalOpenSound; // Zvuk otevření
-    [SerializeField] private AudioClip portalEnterSound; // Zvuk průchodu
+    
+    [Header("Audio")]
+    [Tooltip("Volitelné - automaticky se najde PortalSoundManager.Instance pokud není přiřazeno")]
+    [SerializeField] private PortalSoundManager soundManager;
+    [Tooltip("Vlastní zvuky (volitelné - přepíšou PortalSoundManager)")]
+    [SerializeField] private AudioClip customOpenSound;
+    [SerializeField] private AudioClip customEnterSound;
+    
+    private PortalSoundManager SoundManager
+    {
+        get
+        {
+            if (soundManager == null)
+            {
+                soundManager = PortalSoundManager.Instance;
+            }
+            return soundManager;
+        }
+    }
     
     [Header("Transition Settings")]
     [SerializeField] private float transitionDelay = 0.5f; // Čekání před přechodem
@@ -25,6 +42,7 @@ public class EpochPortal : MonoBehaviour
     private bool isActive = false;
     private bool isTransitioning = false;
     private AudioSource audioSource;
+    private AudioSource ambientAudioSource; // Samostatný AudioSource pro ambient loop
     private Collider portalCollider;
     
     void Start()
@@ -33,7 +51,7 @@ public class EpochPortal : MonoBehaviour
         portalCollider = GetComponent<Collider>();
         portalCollider.isTrigger = true;
         
-        // Audio
+        // Audio - hlavní AudioSource pro one-shot zvuky
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
@@ -41,6 +59,20 @@ public class EpochPortal : MonoBehaviour
         }
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f; // 3D zvuk
+        
+        // Druhý AudioSource pro ambient loop
+        GameObject ambientObj = new GameObject("PortalAmbientSound");
+        ambientObj.transform.SetParent(transform);
+        ambientObj.transform.localPosition = Vector3.zero;
+        ambientAudioSource = ambientObj.AddComponent<AudioSource>();
+        ambientAudioSource.playOnAwake = false;
+        ambientAudioSource.loop = true;
+        ambientAudioSource.spatialBlend = 1f; // 3D zvuk
+        ambientAudioSource.volume = 0f; // Začíná tichý (fade in)
+        if (SoundManager != null && SoundManager.portalAmbientLoop != null)
+        {
+            ambientAudioSource.clip = SoundManager.portalAmbientLoop;
+        }
         
         // Nastavení barvy světla
         if (portalLight != null)
@@ -80,10 +112,20 @@ public class EpochPortal : MonoBehaviour
         isActive = true;
         SetVisualsActive(true);
         
-        // Přehrát zvuk
-        if (audioSource != null && portalOpenSound != null)
+        // Přehrát zvuk otevření
+        AudioClip openSound = customOpenSound != null ? customOpenSound : 
+                              (SoundManager != null ? SoundManager.portalOpen : null);
+        
+        if (audioSource != null && openSound != null)
         {
-            audioSource.PlayOneShot(portalOpenSound);
+            audioSource.PlayOneShot(openSound);
+        }
+        
+        // Spustit ambient loop s fade in
+        if (ambientAudioSource != null && ambientAudioSource.clip != null)
+        {
+            ambientAudioSource.Play();
+            StartCoroutine(FadeAmbientSound(true));
         }
         
         Debug.Log("EpochPortal: Portál aktivován!");
@@ -130,9 +172,12 @@ public class EpochPortal : MonoBehaviour
         isTransitioning = true;
         
         // Přehrát zvuk průchodu
-        if (audioSource != null && portalEnterSound != null)
+        AudioClip enterSound = customEnterSound != null ? customEnterSound : 
+                               (SoundManager != null ? SoundManager.portalEnter : null);
+        
+        if (audioSource != null && enterSound != null)
         {
-            audioSource.PlayOneShot(portalEnterSound);
+            audioSource.PlayOneShot(enterSound);
         }
         
         // Zakázat pohyb hráče
@@ -187,5 +232,76 @@ public class EpochPortal : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, 2f);
         Gizmos.color = new Color(portalColor.r, portalColor.g, portalColor.b, 0.3f);
         Gizmos.DrawSphere(transform.position, 2f);
+    }
+    
+    /// <summary>
+    /// Fade in/out pro ambient zvuk
+    /// </summary>
+    private IEnumerator FadeAmbientSound(bool fadeIn)
+    {
+        if (ambientAudioSource == null || SoundManager == null) yield break;
+        
+        float targetVolume = fadeIn ? SoundManager.ambientLoopVolume : 0f;
+        float startVolume = ambientAudioSource.volume;
+        float fadeTime = SoundManager.ambientFadeTime;
+        float elapsed = 0f;
+        
+        while (elapsed < fadeTime)
+        {
+            elapsed += Time.deltaTime;
+            ambientAudioSource.volume = Mathf.Lerp(startVolume, targetVolume, elapsed / fadeTime);
+            yield return null;
+        }
+        
+        ambientAudioSource.volume = targetVolume;
+        
+        // Zastavit přehrávání pokud je fade out dokončený
+        if (!fadeIn && ambientAudioSource.volume == 0f)
+        {
+            ambientAudioSource.Stop();
+        }
+    }
+    
+    /// <summary>
+    /// Zavřít portál (fade out ambient + zvuk zavření)
+    /// </summary>
+    public void ClosePortal()
+    {
+        if (!isActive) return;
+        
+        isActive = false;
+        
+        // Přehrát zvuk zavření
+        if (audioSource != null && SoundManager != null && SoundManager.portalClose != null)
+        {
+            audioSource.PlayOneShot(SoundManager.portalClose);
+        }
+        
+        // Fade out ambient sound
+        if (ambientAudioSource != null && ambientAudioSource.isPlaying)
+        {
+            StartCoroutine(FadeAmbientSound(false));
+        }
+        
+        // Vypnout vizuály po krátkém zpoždění
+        StartCoroutine(DelayedDeactivateVisuals());
+    }
+    
+    /// <summary>
+    /// Zpožděné vypnutí vizuálů
+    /// </summary>
+    private IEnumerator DelayedDeactivateVisuals()
+    {
+        yield return new WaitForSeconds(0.5f);
+        SetVisualsActive(false);
+    }
+    
+    void OnDestroy()
+    {
+        // Zastavit všechny zvuky při zničení
+        if (ambientAudioSource != null)
+        {
+            ambientAudioSource.Stop();
+        }
     }
 }
